@@ -196,6 +196,156 @@
     <string name="backup_weak_password_title">Contraseña débil</string>
     <string name="backup_weak_password_body">La contraseña no cumple la política recomendada. ¿Deseas continuar con la restauración de todos modos?</string>
     <string name="backup_continue_restore">Continuar restauración</string>
+    <string name="backup_passwords_mismatch">Las contraseñas no coinciden</string>
+    <string name="backup_export_ready">Respaldo DimagPay cifrado listo para compartir</string>
+    <string name="backup_export_failed">No se pudo crear el respaldo de DimagPay</string>
+    <string name="backup_restore_ok">Datos de DimagPay restaurados correctamente</string>
+    <string name="backup_restore_failed">No se pudo restaurar el respaldo de DimagPay</string>
+    <string name="backup_open_failed">No se pudo abrir el archivo de respaldo de DimagPay</string>
+    <string name="backup_share_chooser">Compartir respaldo DimagPay</string>
+    <string name="backup_share_subject">Respaldo DimagPay</string>
+    <string name="backup_policy_min_length">Mínimo %1$d caracteres</string>
+    <string name="backup_policy_letter">Debe incluir al menos una letra</string>
+    <string name="backup_policy_digit">Debe incluir al menos un número</string>
+    <string name="backup_policy_symbol">Debe incluir al menos un símbolo (ej. !@#$%%)</string>
+    <string name="backup_policy_hint">Letras, números y un símbolo. Mín. %1$d.</string>
+    <string name="backup_password_invalid">Contraseña de respaldo inválida: %1$s</string>
+    <string name="backup_password_label">Contraseña</string>
+    <string name="backup_password_confirm_label">Confirmar contraseña</string>
+    <string name="backup_strength_label">Fortaleza: %1$s</string>
+    <string name="backup_inventory_current">Datos actuales en DimagPay</string>
+    <string name="backup_inventory_file">Contenido del respaldo</string>
+    <string name="backup_inventory_unread">No se pudo leer el resumen.</string>
+    <string name="backup_inventory_accounts">• Cuentas: %1$d</string>
+    <string name="backup_inventory_transactions">• Movimientos: %1$d</string>
+    <string name="backup_inventory_clients">• Clientes: %1$d</string>
+    <string name="backup_inventory_suppliers">• Proveedores: %1$d</string>
+    <string name="backup_strength_weak">Débil</string>
+    <string name="backup_strength_medium">Media</string>
+    <string name="backup_strength_strong">Fuerte</string>
+
+    <string name="msg_tx_saved">Movimiento registrado</string>
+    <string name="msg_tx_deleted">Movimiento eliminado</string>
+    <string name="msg_tx_save_failed">No se pudo guardar el movimiento</string>
+    <string name="msg_tx_delete_failed">No se pudo eliminar el movimiento</string>
+    <string name="msg_tx_prepare_account_failed">No se pudo preparar la cuenta</string>
+    <string name="msg_select_account">Selecciona una cuenta</string>
+    <string name="msg_invalid_amount">Monto inválido</string>
+
+    <string name="msg_client_created">Cliente creado</string>
+    <string name="msg_client_updated">Cliente actualizado</string>
+    <string name="msg_client_deleted">Cliente eliminado</string>
+    <string name="msg_client_create_failed">No se pudo crear el cliente</string>
+    <string name="msg_client_update_failed">No se pudo actualizar el cliente</string>
+    <string name="msg_client_delete_failed">No se pudo eliminar el cliente</string>
+    <string name="msg_client_select">Selecciona un cliente de la lista</string>
+    <string name="msg_client_select_dest_account">Selecciona una cuenta destino</string>
+    <string name="msg_invalid_deposit">Abono inválido</string>
+    <string name="msg_invalid_initial_debt">Deuda inicial inválida</string>
+    <string name="msg_invalid_debt_amount">Monto de deuda inválido</string>
+    <string name="msg_deposit_ok">Abono de %1$s a %2$s · ingresó en %3$s</string>
+    <string name="msg_deposit_failed">No se pudo aplicar el abono</string>
+    <string name="msg_debt_added">Deuda agregada: %1$s</string>
+    <string name="msg_debt_add_failed">No se pudo agregar la deuda</string>
+
+    <string name="msg_supplier_created">Proveedor creado</string>
+    <string name="msg_supplier_updated">Proveedor actualizado</string>
+    <string name="msg_supplier_deleted">Proveedor eliminado</string>
+    <string name="msg_supplier_create_failed">No se pudo crear el proveedor</string>
+    <string name="msg_supplier_update_failed">No se pudo actualizar el proveedor</string>
+    <string name="msg_supplier_delete_failed">No se pudo eliminar el proveedor</string>
+    <string name="msg_supplier_select">Selecciona un proveedor de la lista</string>
+    <string name="msg_supplier_select_account">Selecciona la cuenta de donde sale el pago</string>
+    <string name="msg_invalid_payment">Monto de pago inválido</string>
+    <string name="msg_payment_ok">Pago de %1$s a %2$s · descontado de %3$s</string>
+    <string name="msg_payment_failed">No se pudo registrar el pago</string>
+
+    <string name="msg_account_created">Cuenta creada</string>
+    <string name="msg_account_updated">Cuenta actualizada</string>
+    <string name="msg_account_deleted">Cuenta eliminada</string>
+    <string name="msg_account_create_failed">No se pudo crear la cuenta</string>
+    <string name="msg_account_update_failed">No se pudo actualizar la cuenta</string>
+    <string name="msg_account_delete_failed">No se pudo eliminar la cuenta</string>
+    <string name="msg_account_select_list">Selecciona una cuenta de la lista</string>
+    <string name="msg_invalid_initial_balance">Saldo inicial inválido</string>
+    <string name="msg_transfer_select_accounts">Selecciona cuenta de origen y destino</string>
+    <string name="msg_transfer_ok">Transferencia realizada</string>
+    <string name="msg_transfer_failed">No se pudo realizar la transferencia</string>
+
+    <string name="msg_pin_format">El PIN debe tener entre 4 y 8 dígitos</string>
+    <string name="msg_pin_mismatch">Los PIN no coinciden</string>
+    <string name="msg_pin_activated">PIN activado correctamente</string>
+    <string name="msg_pin_activate_failed">No se pudo activar el PIN</string>
+    <string name="msg_pin_enter_current">Introduce tu PIN actual</string>
+    <string name="msg_pin_enter_current_disable">Introduce tu PIN actual para desactivar</string>
+    <string name="msg_pin_updated">PIN actualizado</string>
+    <string name="msg_pin_current_wrong">PIN actual incorrecto</string>
+    <string name="msg_pin_disabled">Bloqueo por PIN desactivado</string>
+    <string name="msg_onboarding_name_required">Escribe cómo quieres que te llamemos</string>
+    <string name="msg_settings_name_save_failed">No se pudo guardar el nombre</string>
+
+    <string name="pin_label">PIN</string>
+    <string name="pin_checking">Comprobando…</string>
+    <string name="pin_biometric_title">Desbloquear DimagPay</string>
+    <string name="pin_biometric_subtitle">Usa tu huella o rostro como alternativa al PIN</string>
+    <string name="pin_use_pin_instead">Usar PIN</string>
+    <string name="pin_settings_title">PIN de la app</string>
+    <string name="pin_settings_active_body">El bloqueo está activo. Puedes cambiar o desactivar el PIN.</string>
+    <string name="pin_settings_inactive_body">Protege DimagPay con un PIN de 4 a 8 dígitos. Se guarda cifrado en el dispositivo.</string>
+    <string name="pin_status_on">Estado: activado</string>
+    <string name="pin_status_off">Estado: desactivado</string>
+    <string name="pin_hash_note">El PIN nunca se guarda en texto plano (solo un hash con sal).</string>
+    <string name="pin_new_label">Nuevo PIN</string>
+    <string name="pin_confirm_label">Confirmar PIN</string>
+    <string name="pin_current_label">PIN actual</string>
+    <string name="pin_confirm_new_label">Confirmar nuevo PIN</string>
+
+    <string name="error_account_not_found">Cuenta no encontrada</string>
+    <string name="error_account_name_required">El nombre de la cuenta es obligatorio</string>
+    <string name="error_account_name_too_long">El nombre de la cuenta es demasiado largo</string>
+    <string name="error_account_type_invalid">Tipo de cuenta inválido</string>
+    <string name="error_initial_balance_negative">El saldo inicial no puede ser negativo</string>
+    <string name="error_client_not_found">Cliente no encontrado</string>
+    <string name="error_client_name_required">El nombre del cliente es obligatorio</string>
+    <string name="error_client_name_too_long">El nombre del cliente es demasiado largo</string>
+    <string name="error_initial_debt_negative">La deuda inicial no puede ser negativa</string>
+    <string name="error_payment_must_be_positive">El pago debe ser mayor a cero</string>
+    <string name="error_deposit_must_be_positive">El abono debe ser mayor a cero</string>
+    <string name="error_amount_must_be_positive">El monto debe ser mayor a cero</string>
+    <string name="error_deposit_exceeds_debt">El abono supera la deuda pendiente (%1$s)</string>
+    <string name="error_supplier_not_found">Proveedor no encontrado</string>
+    <string name="error_supplier_name_required">El nombre del proveedor es obligatorio</string>
+    <string name="error_supplier_name_too_long">El nombre del proveedor es demasiado largo</string>
+    <string name="error_transaction_not_found">Movimiento no encontrado</string>
+    <string name="error_category_required">La categoría es obligatoria</string>
+    <string name="error_invalid_transaction_type">Tipo de movimiento inválido</string>
+    <string name="error_invalid_type">Tipo inválido</string>
+    <string name="error_invalid_transfer_type">Tipo de transferencia inválido</string>
+    <string name="error_transfer_same_account">La cuenta de origen y destino deben ser diferentes</string>
+    <string name="error_source_account_not_found">Cuenta de origen no encontrada</string>
+    <string name="error_dest_account_not_found">Cuenta de destino no encontrada</string>
+    <string name="error_insufficient_balance">Saldo insuficiente en «%1$s» (%2$s)</string>
+    <string name="error_insufficient_balance_revert">Saldo insuficiente en «%1$s» (%2$s) para revertir el ingreso</string>
+    <string name="error_cannot_revert_supplier_payment">No se puede revertir el pago: acumulado inconsistente</string>
+
+    <string name="formal_privacy_summary">DimagPay es offline-first. Tus datos financieros se guardan cifrados en este dispositivo (SQLCipher + Android Keystore). El nombre de perfil también se almacena cifrado.\n\nLas copias de seguridad automáticas del sistema y la transferencia de dispositivo están deshabilitadas. Puedes exportar un respaldo manual desde Ajustes cuando lo necesites.\n\nSi autorizas contactos, la app solo busca nombre y teléfono bajo demanda para crear clientes o proveedores. No inicia sesión en Google ni envía información a servidores.\n\nLos recordatorios de cobranza son notificaciones locales en este dispositivo.</string>
+    <string name="formal_team_role_giosanblas">Producto, visión y dirección del proyecto</string>
+    <string name="formal_team_role_auto">Arquitectura Android · Kotlin · Compose · Room</string>
+    <string-array name="formal_licenses">
+        <item>Kotlin — Apache License 2.0</item>
+        <item>AndroidX Jetpack (Compose, Room, Lifecycle, Navigation, WorkManager) — Apache License 2.0</item>
+        <item>Kotlin Coroutines — Apache License 2.0</item>
+        <item>AndroidX Security Crypto — Apache License 2.0</item>
+        <item>SQLCipher for Android — BSD-style / Zetetic</item>
+        <item>Accompanist Permissions — Apache License 2.0</item>
+        <item>Material Icons — Apache License 2.0</item>
+        <item>Fraunces y Figtree — SIL Open Font License 1.1</item>
+    </string-array>
+
+    <plurals name="error_cannot_delete_account">
+        <item quantity="one">No se puede eliminar «%1$s»: tiene %2$d movimiento registrado</item>
+        <item quantity="other">No se puede eliminar «%1$s»: tiene %2$d movimientos registrados</item>
+    </plurals>
 
     <!-- Valores persistidos en Room: no cambiar sin migración de datos -->
     <string-array name="account_types">

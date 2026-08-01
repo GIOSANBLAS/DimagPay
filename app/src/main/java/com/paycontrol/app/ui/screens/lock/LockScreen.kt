@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.paycontrol.app.R
 import com.paycontrol.app.security.AppLockGate
 
 @Composable
@@ -71,25 +73,25 @@ fun LockScreen(viewModel: AppLockViewModel) {
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             Text(
-                text = "DimagPay bloqueado",
+                text = stringResource(R.string.pin_locked_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center
             )
             Text(
-                text = "Introduce tu PIN para continuar",
+                text = stringResource(R.string.pin_enter_hint),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
                 value = state.pinInput,
                 onValueChange = viewModel::onPinInputChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("PIN") },
+                label = { Text(stringResource(R.string.pin_label)) },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
@@ -116,7 +118,13 @@ fun LockScreen(viewModel: AppLockViewModel) {
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !state.isChecking && state.pinInput.isNotEmpty()
             ) {
-                Text(if (state.isChecking) "Comprobando…" else "Desbloquear")
+                Text(
+                    if (state.isChecking) {
+                        stringResource(R.string.pin_checking)
+                    } else {
+                        stringResource(R.string.pin_unlock)
+                    }
+                )
             }
 
             if (biometricsAvailable && activity != null) {
@@ -137,7 +145,7 @@ fun LockScreen(viewModel: AppLockViewModel) {
                         contentDescription = null,
                         modifier = Modifier.padding(end = 8.dp)
                     )
-                    Text("Usar biometría")
+                    Text(stringResource(R.string.pin_use_biometrics))
                 }
             }
         }
@@ -170,9 +178,9 @@ private fun launchBiometricPrompt(
         }
     )
     val info = BiometricPrompt.PromptInfo.Builder()
-        .setTitle("Desbloquear DimagPay")
-        .setSubtitle("Usa tu huella o rostro como alternativa al PIN")
-        .setNegativeButtonText("Usar PIN")
+        .setTitle(activity.getString(R.string.pin_biometric_title))
+        .setSubtitle(activity.getString(R.string.pin_biometric_subtitle))
+        .setNegativeButtonText(activity.getString(R.string.pin_use_pin_instead))
         .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
         .build()
     prompt.authenticate(info)

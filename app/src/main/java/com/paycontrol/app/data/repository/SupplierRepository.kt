@@ -6,6 +6,7 @@ import com.paycontrol.app.data.local.dao.SupplierDao
 import com.paycontrol.app.data.local.dao.TransactionDao
 import com.paycontrol.app.data.local.entity.SupplierEntity
 import com.paycontrol.app.domain.util.AppLog
+import com.paycontrol.app.domain.util.DomainStrings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -14,6 +15,7 @@ import kotlinx.coroutines.withContext
 
 class SupplierRepository(
     private val database: AppDatabase,
+    private val messages: DomainStrings,
     private val supplierDao: SupplierDao = database.supplierDao(),
     private val transactionDao: TransactionDao = database.transactionDao()
 ) {
@@ -32,8 +34,8 @@ class SupplierRepository(
     suspend fun createSupplier(name: String, phone: String = ""): Long =
         withContext(Dispatchers.IO) {
             val trimmed = name.trim()
-            require(trimmed.isNotBlank()) { "El nombre del proveedor es obligatorio" }
-            require(trimmed.length <= 80) { "El nombre del proveedor es demasiado largo" }
+            require(trimmed.isNotBlank()) { messages.supplierNameRequired() }
+            require(trimmed.length <= 80) { messages.supplierNameTooLong() }
             supplierDao.insert(
                 SupplierEntity(
                     name = trimmed,
@@ -45,10 +47,10 @@ class SupplierRepository(
     suspend fun updateSupplier(supplierId: Long, name: String, phone: String) =
         withContext(Dispatchers.IO) {
             val trimmed = name.trim()
-            require(trimmed.isNotBlank()) { "El nombre del proveedor es obligatorio" }
-            require(trimmed.length <= 80) { "El nombre del proveedor es demasiado largo" }
+            require(trimmed.isNotBlank()) { messages.supplierNameRequired() }
+            require(trimmed.length <= 80) { messages.supplierNameTooLong() }
             val supplier = supplierDao.getById(supplierId)
-                ?: error("Proveedor no encontrado")
+                ?: error(messages.supplierNotFound())
             supplierDao.update(
                 supplier.copy(
                     name = trimmed,
@@ -67,7 +69,7 @@ class SupplierRepository(
     suspend fun deleteById(supplierId: Long) = withContext(Dispatchers.IO) {
         database.withTransaction {
             val supplier = supplierDao.getById(supplierId)
-                ?: error("Proveedor no encontrado")
+                ?: error(messages.supplierNotFound())
             transactionDao.clearRelatedSupplier(supplierId)
             supplierDao.delete(supplier)
         }

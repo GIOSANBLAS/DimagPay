@@ -60,6 +60,8 @@ Listas largas (movimientos, clientes, proveedores, reportes) usan **Paging 3** +
 
 Textos de UI en `res/values/strings.xml` (ES). Categorías y tipos de cuenta también como `string-array` (`income_categories`, `expense_categories`, `account_types`); los literales persistidos en Room siguen siendo los valores en español.
 
+Mensajes de ViewModels y errores de dominio usan recursos (`DomainStrings`, `Application.getString`). `BackupPasswordPolicy` expone códigos (`Issue`) y etiquetas vía `Resources`. Privacidad / equipo / licencias formales se leen desde strings; el changelog editorial permanece en `FormalContent`.
+
 ## Pruebas
 
 - Unitarias: `Money`, `BackupPasswordPolicy`, cifrado de respaldo, `FinanceRepository`, `ClientRepository`, `DashboardViewModel`, migraciones Room 1→3.

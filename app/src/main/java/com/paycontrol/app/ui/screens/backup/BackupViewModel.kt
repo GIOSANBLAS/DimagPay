@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.paycontrol.app.R
 import com.paycontrol.app.data.backup.BackupManager
 import com.paycontrol.app.domain.util.AppLog
 import com.paycontrol.app.domain.util.BackupPasswordPolicy
@@ -71,12 +72,18 @@ class BackupViewModel @Inject constructor(
 
     fun exportBackup(password: String, confirmPassword: String) {
         if (_uiState.value.isExporting || _uiState.value.isRestoring) return
-        BackupPasswordPolicy.validate(password)?.let { reason ->
-            _uiState.update { it.copy(errorMessage = reason) }
+        BackupPasswordPolicy.validate(password)?.let { issue ->
+            _uiState.update {
+                it.copy(
+                    errorMessage = BackupPasswordPolicy.issueMessage(issue, app.resources)
+                )
+            }
             return
         }
         if (password != confirmPassword) {
-            _uiState.update { it.copy(errorMessage = "Las contraseñas no coinciden") }
+            _uiState.update {
+                it.copy(errorMessage = app.getString(R.string.backup_passwords_mismatch))
+            }
             return
         }
         viewModelScope.launch {
@@ -95,7 +102,7 @@ class BackupViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isExporting = false,
-                        successMessage = "Respaldo DimagPay cifrado listo para compartir"
+                        successMessage = app.getString(R.string.backup_export_ready)
                     )
                 }
                 _shareEvents.emit(intent)
@@ -106,7 +113,7 @@ class BackupViewModel @Inject constructor(
                         isExporting = false,
                         errorMessage = uiErrorMapper.map(
                             error,
-                            "No se pudo crear el respaldo de DimagPay"
+                            app.getString(R.string.backup_export_failed)
                         )
                     )
                 }
@@ -169,7 +176,10 @@ class BackupViewModel @Inject constructor(
                     showRestoreConfirm = false,
                     showWeakRestorePasswordConfirm = true,
                     pendingRestorePassword = password,
-                    weakPasswordReason = policyIssue,
+                    weakPasswordReason = BackupPasswordPolicy.issueMessage(
+                        policyIssue,
+                        app.resources
+                    ),
                     errorMessage = null,
                     successMessage = null
                 )
@@ -208,7 +218,7 @@ class BackupViewModel @Inject constructor(
                 app.contentResolver.openInputStream(uri)?.use { stream ->
                     backupManager.import(stream, password)
                 } ?: throw IllegalArgumentException(
-                    "No se pudo abrir el archivo de respaldo de DimagPay"
+                    app.getString(R.string.backup_open_failed)
                 )
             }.onSuccess {
                 _uiState.update {
@@ -216,7 +226,7 @@ class BackupViewModel @Inject constructor(
                         isRestoring = false,
                         pendingRestoreUri = null,
                         pendingRestorePassword = null,
-                        successMessage = "Datos de DimagPay restaurados correctamente"
+                        successMessage = app.getString(R.string.backup_restore_ok)
                     )
                 }
             }.onFailure { error ->
@@ -228,7 +238,7 @@ class BackupViewModel @Inject constructor(
                         pendingRestorePassword = null,
                         errorMessage = uiErrorMapper.map(
                             error,
-                            "No se pudo restaurar el respaldo de DimagPay"
+                            app.getString(R.string.backup_restore_failed)
                         )
                     )
                 }
@@ -249,7 +259,7 @@ class BackupViewModel @Inject constructor(
         return Intent(Intent.ACTION_SEND).apply {
             type = "application/json"
             putExtra(Intent.EXTRA_STREAM, uri)
-            putExtra(Intent.EXTRA_SUBJECT, "Respaldo DimagPay")
+            putExtra(Intent.EXTRA_SUBJECT, app.getString(R.string.backup_share_subject))
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
     }

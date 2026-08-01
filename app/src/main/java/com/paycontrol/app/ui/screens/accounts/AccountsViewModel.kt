@@ -1,7 +1,9 @@
 package com.paycontrol.app.ui.screens.accounts
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.paycontrol.app.R
 import com.paycontrol.app.data.local.entity.AccountEntity
 import com.paycontrol.app.data.repository.FinanceRepository
 import com.paycontrol.app.domain.model.AccountType
@@ -36,6 +38,7 @@ data class AccountsUiState(
 
 @HiltViewModel
 class AccountsViewModel @Inject constructor(
+    private val app: Application,
     private val financeRepository: FinanceRepository,
     private val uiErrorMapper: UiErrorMapper
 ) : ViewModel() {
@@ -155,7 +158,7 @@ class AccountsViewModel @Inject constructor(
             Money.parseToCents(state.initialBalanceInput)
         }
         if (balance == null) {
-            _uiState.update { it.copy(errorMessage = "Saldo inicial inválido") }
+            _uiState.update { it.copy(errorMessage = app.getString(R.string.msg_invalid_initial_balance)) }
             return
         }
         viewModelScope.launch {
@@ -171,7 +174,7 @@ class AccountsViewModel @Inject constructor(
                             editType = state.editType,
                             transferFromAccountId = state.transferFromAccountId,
                             transferToAccountId = state.transferToAccountId,
-                            successMessage = "Cuenta creada"
+                            successMessage = app.getString(R.string.msg_account_created)
                         ),
                         accounts.value
                     )
@@ -181,7 +184,7 @@ class AccountsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isSaving = false,
-                        errorMessage = friendlyError(error, "No se pudo crear la cuenta")
+                        errorMessage = friendlyError(error, app.getString(R.string.msg_account_create_failed))
                     )
                 }
             }
@@ -191,7 +194,7 @@ class AccountsViewModel @Inject constructor(
     fun updateAccount() {
         val state = _uiState.value
         val id = state.selectedAccountId ?: run {
-            _uiState.update { it.copy(errorMessage = "Selecciona una cuenta de la lista") }
+            _uiState.update { it.copy(errorMessage = app.getString(R.string.msg_account_select_list)) }
             return
         }
         if (state.isSaving) return
@@ -203,7 +206,7 @@ class AccountsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isSaving = false,
-                        successMessage = "Cuenta actualizada",
+                        successMessage = app.getString(R.string.msg_account_updated),
                         errorMessage = null
                     )
                 }
@@ -212,7 +215,7 @@ class AccountsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isSaving = false,
-                        errorMessage = friendlyError(error, "No se pudo actualizar la cuenta")
+                        errorMessage = friendlyError(error, app.getString(R.string.msg_account_update_failed))
                     )
                 }
             }
@@ -232,7 +235,7 @@ class AccountsViewModel @Inject constructor(
             }.onSuccess {
                 _uiState.update {
                     ensureTransferDefaults(
-                        AccountsUiState(successMessage = "Cuenta eliminada"),
+                        AccountsUiState(successMessage = app.getString(R.string.msg_account_deleted)),
                         accounts.value.filter { account -> account.id != id }
                     )
                 }
@@ -241,7 +244,7 @@ class AccountsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isSaving = false,
-                        errorMessage = friendlyError(error, "No se pudo eliminar la cuenta")
+                        errorMessage = friendlyError(error, app.getString(R.string.msg_account_delete_failed))
                     )
                 }
             }
@@ -253,12 +256,12 @@ class AccountsViewModel @Inject constructor(
         val fromId = state.transferFromAccountId
         val toId = state.transferToAccountId
         if (fromId == null || toId == null) {
-            _uiState.update { it.copy(errorMessage = "Selecciona cuenta de origen y destino") }
+            _uiState.update { it.copy(errorMessage = app.getString(R.string.msg_transfer_select_accounts)) }
             return
         }
         val amount = Money.parseToCents(state.transferAmountInput)
         if (amount == null || amount <= 0L) {
-            _uiState.update { it.copy(errorMessage = "Monto inválido") }
+            _uiState.update { it.copy(errorMessage = app.getString(R.string.msg_invalid_amount)) }
             return
         }
 
@@ -284,7 +287,7 @@ class AccountsViewModel @Inject constructor(
                     it.copy(
                         isSaving = false,
                         transferAmountInput = "",
-                        successMessage = "Transferencia realizada",
+                        successMessage = app.getString(R.string.msg_transfer_ok),
                         errorMessage = null
                     )
                 }
@@ -293,7 +296,7 @@ class AccountsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isSaving = false,
-                        errorMessage = friendlyError(error, "No se pudo realizar la transferencia")
+                        errorMessage = friendlyError(error, app.getString(R.string.msg_transfer_failed))
                     )
                 }
             }

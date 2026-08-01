@@ -1,11 +1,13 @@
 package com.paycontrol.app.ui.screens.transactions
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.paycontrol.app.R
 import com.paycontrol.app.data.local.entity.AccountEntity
 import com.paycontrol.app.data.local.entity.TransactionEntity
 import com.paycontrol.app.data.repository.FinanceRepository
@@ -48,6 +50,7 @@ data class TransactionFormState(
 
 @HiltViewModel
 class TransactionsViewModel @Inject constructor(
+    private val app: Application,
     private val financeRepository: FinanceRepository,
     private val uiErrorMapper: UiErrorMapper
 ) : ViewModel() {
@@ -114,7 +117,7 @@ class TransactionsViewModel @Inject constructor(
                 .onFailure { error ->
                     AppLog.e(TAG, "Error al preparar cuenta por defecto", error)
                     _form.update {
-                        it.copy(errorMessage = error.message ?: "No se pudo preparar la cuenta")
+                        it.copy(errorMessage = error.message ?: app.getString(R.string.msg_tx_prepare_account_failed))
                     }
                 }
         }
@@ -128,11 +131,11 @@ class TransactionsViewModel @Inject constructor(
         val note = _form.value.note
 
         if (accountId == null) {
-            _form.update { it.copy(errorMessage = "Selecciona una cuenta") }
+            _form.update { it.copy(errorMessage = app.getString(R.string.msg_select_account)) }
             return
         }
         if (amountCents == null || amountCents <= 0L) {
-            _form.update { it.copy(errorMessage = "Monto inválido") }
+            _form.update { it.copy(errorMessage = app.getString(R.string.msg_invalid_amount)) }
             return
         }
 
@@ -162,7 +165,7 @@ class TransactionsViewModel @Inject constructor(
                         accountId = accountId,
                         type = type,
                         category = category,
-                        successMessage = "Movimiento registrado"
+                        successMessage = app.getString(R.string.msg_tx_saved)
                     )
                 }
             }.onFailure { error ->
@@ -170,7 +173,7 @@ class TransactionsViewModel @Inject constructor(
                 _form.update {
                     it.copy(
                         isSaving = false,
-                        errorMessage = friendlyError(error, "No se pudo guardar el movimiento")
+                        errorMessage = friendlyError(error, app.getString(R.string.msg_tx_save_failed))
                     )
                 }
             }
@@ -201,7 +204,7 @@ class TransactionsViewModel @Inject constructor(
                 _form.update {
                     it.copy(
                         deletingId = null,
-                        successMessage = "Movimiento eliminado",
+                        successMessage = app.getString(R.string.msg_tx_deleted),
                         errorMessage = null
                     )
                 }
@@ -210,7 +213,7 @@ class TransactionsViewModel @Inject constructor(
                 _form.update {
                     it.copy(
                         deletingId = null,
-                        errorMessage = friendlyError(error, "No se pudo eliminar el movimiento")
+                        errorMessage = friendlyError(error, app.getString(R.string.msg_tx_delete_failed))
                     )
                 }
             }

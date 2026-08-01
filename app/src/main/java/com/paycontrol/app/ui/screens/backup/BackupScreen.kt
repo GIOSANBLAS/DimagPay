@@ -68,7 +68,10 @@ fun BackupScreen(
         viewModel.shareEvents.collect { intent ->
             AppLockGate.suppressFor()
             context.startActivity(
-                Intent.createChooser(intent, "Compartir respaldo DimagPay")
+                Intent.createChooser(
+                    intent,
+                    context.getString(R.string.backup_share_chooser)
+                )
             )
         }
     }
@@ -228,11 +231,15 @@ private fun BackupPasswordDialog(
 ) {
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    val validationError = BackupPasswordPolicy.validate(password)
+    val resources = LocalContext.current.resources
+    val validationIssue = BackupPasswordPolicy.validate(password)
+    val validationError = validationIssue?.let {
+        BackupPasswordPolicy.issueMessage(it, resources)
+    }
     val strength = BackupPasswordPolicy.strength(password)
     val passwordsMatch = !requireConfirm || password == confirmPassword
     val canSubmit = confirmEnabled &&
-        validationError == null &&
+        validationIssue == null &&
         passwordsMatch &&
         password.isNotEmpty()
 
@@ -253,15 +260,18 @@ private fun BackupPasswordDialog(
                     value = password,
                     onValueChange = { password = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Contraseña") },
+                    label = { Text(stringResource(R.string.backup_password_label)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     enabled = confirmEnabled,
-                    isError = password.isNotEmpty() && validationError != null,
+                    isError = password.isNotEmpty() && validationIssue != null,
                     supportingText = {
                         val tip = validationError
-                            ?: "Letras, números y un símbolo. Mín. ${BackupPasswordPolicy.MIN_LENGTH}."
+                            ?: stringResource(
+                                R.string.backup_policy_hint,
+                                BackupPasswordPolicy.MIN_LENGTH
+                            )
                         Text(tip)
                     }
                 )
@@ -273,7 +283,7 @@ private fun BackupPasswordDialog(
                         value = confirmPassword,
                         onValueChange = { confirmPassword = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Confirmar contraseña") },
+                        label = { Text(stringResource(R.string.backup_password_confirm_label)) },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -281,7 +291,7 @@ private fun BackupPasswordDialog(
                         isError = confirmPassword.isNotEmpty() && !passwordsMatch,
                         supportingText = {
                             if (confirmPassword.isNotEmpty() && !passwordsMatch) {
-                                Text("Las contraseñas no coinciden")
+                                Text(stringResource(R.string.backup_passwords_mismatch))
                             }
                         }
                     )
@@ -308,7 +318,7 @@ private fun BackupPasswordDialog(
                 onClick = onDismiss,
                 enabled = confirmEnabled
             ) {
-                Text("Cancelar")
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )
@@ -322,20 +332,24 @@ private fun InventorySummary(
 ) {
     SoftPanel {
         Text(
-            if (isCurrentData) "Datos actuales en DimagPay" else "Contenido del respaldo",
+            if (isCurrentData) {
+                stringResource(R.string.backup_inventory_current)
+            } else {
+                stringResource(R.string.backup_inventory_file)
+            },
             style = MaterialTheme.typography.titleSmall
         )
         if (inventory == null) {
             Text(
-                "No se pudo leer el resumen.",
+                stringResource(R.string.backup_inventory_unread),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         } else {
-            Text("• Cuentas: ${inventory.accounts}")
-            Text("• Movimientos: ${inventory.transactions}")
-            Text("• Clientes: ${inventory.clients}")
-            Text("• Proveedores: ${inventory.suppliers}")
+            Text(stringResource(R.string.backup_inventory_accounts, inventory.accounts))
+            Text(stringResource(R.string.backup_inventory_transactions, inventory.transactions))
+            Text(stringResource(R.string.backup_inventory_clients, inventory.clients))
+            Text(stringResource(R.string.backup_inventory_suppliers, inventory.suppliers))
         }
         warning?.let {
             Text(
@@ -361,7 +375,10 @@ private fun StrengthMeter(strength: BackupPasswordPolicy.Strength) {
     }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
-            "Fortaleza: ${BackupPasswordPolicy.strengthLabel(strength)}",
+            stringResource(
+                R.string.backup_strength_label,
+                BackupPasswordPolicy.strengthLabel(strength, LocalContext.current.resources)
+            ),
             style = MaterialTheme.typography.labelMedium,
             color = color
         )

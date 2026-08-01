@@ -1,5 +1,8 @@
 package com.paycontrol.app.domain.model
 
+import android.content.res.Resources
+import com.paycontrol.app.R
+
 object AppInfo {
     const val APP_NAME = "DimagPay"
     const val VERSION_NAME = "1.3.0-Atlas"
@@ -21,6 +24,7 @@ data class TeamMember(
 
 object FormalContent {
 
+    /** Changelog de producto (contenido editorial; no UI de formularios). */
     val changelog = listOf(
         ChangelogEntry(
             version = "1.3.0-Atlas",
@@ -30,10 +34,10 @@ object FormalContent {
                 "Estado de UI centralizado en ViewModels",
                 "Logging Timber + AppLog (sin secretos)",
                 "Backup con confirmación de contraseña, fortaleza e inventario",
-                "Paging 3 en movimientos, clientes y proveedores",
+                "Paging 3 en movimientos, clientes, proveedores y reportes",
                 "Inyección Hilt",
                 "Fechas UTC + índices compuestos (Room v3)",
-                "ARCHITECTURE.md y pruebas de política/cifrado"
+                "ARCHITECTURE.md y pruebas de repositorio/migraciones"
             )
         ),
         ChangelogEntry(
@@ -78,32 +82,14 @@ object FormalContent {
         )
     )
 
-    val team = listOf(
-        TeamMember("Giosánblas", "Producto, visión y dirección del proyecto"),
-        TeamMember("Auto", "Arquitectura Android · Kotlin · Compose · Room")
+    fun team(resources: Resources): List<TeamMember> = listOf(
+        TeamMember("Giosánblas", resources.getString(R.string.formal_team_role_giosanblas)),
+        TeamMember("Auto", resources.getString(R.string.formal_team_role_auto))
     )
 
-    val licenses = listOf(
-        "Kotlin — Apache License 2.0",
-        "AndroidX Jetpack (Compose, Room, Lifecycle, Navigation, WorkManager) — Apache License 2.0",
-        "Kotlin Coroutines — Apache License 2.0",
-        "AndroidX Security Crypto — Apache License 2.0",
-        "SQLCipher for Android — BSD-style / Zetetic",
-        "Accompanist Permissions — Apache License 2.0",
-        "Material Icons — Apache License 2.0",
-        "Fraunces y Figtree — SIL Open Font License 1.1"
-    )
+    fun licenses(resources: Resources): List<String> =
+        resources.getStringArray(R.array.formal_licenses).toList()
 
-    val privacySummary = """
-        DimagPay es offline-first. Tus datos financieros se guardan cifrados en este dispositivo
-        (SQLCipher + Android Keystore). El nombre de perfil también se almacena cifrado.
-
-        Las copias de seguridad automáticas del sistema y la transferencia de dispositivo están
-        deshabilitadas. Puedes exportar un respaldo manual desde Ajustes cuando lo necesites.
-
-        Si autorizas contactos, la app solo busca nombre y teléfono bajo demanda para crear
-        clientes o proveedores. No inicia sesión en Google ni envía información a servidores.
-
-        Los recordatorios de cobranza son notificaciones locales en este dispositivo.
-    """.trimIndent()
+    fun privacySummary(resources: Resources): String =
+        resources.getString(R.string.formal_privacy_summary)
 }

@@ -23,10 +23,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.paycontrol.app.R
 import com.paycontrol.app.ui.components.SectionTitle
 import com.paycontrol.app.ui.components.SoftPanel
 
@@ -42,10 +44,13 @@ fun PinSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Bloqueo por PIN") },
+                title = { Text(stringResource(R.string.pin_lock_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Volver")
+                        Icon(
+                            Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back)
+                        )
                     }
                 }
             )
@@ -60,21 +65,25 @@ fun PinSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SectionTitle(
-                title = "PIN de la app",
+                title = stringResource(R.string.pin_settings_title),
                 subtitle = if (pinEnabled) {
-                    "El bloqueo está activo. Puedes cambiar o desactivar el PIN."
+                    stringResource(R.string.pin_settings_active_body)
                 } else {
-                    "Protege DimagPay con un PIN de 4 a 8 dígitos. Se guarda cifrado en el dispositivo."
+                    stringResource(R.string.pin_settings_inactive_body)
                 }
             )
 
             SoftPanel {
                 Text(
-                    text = if (pinEnabled) "Estado: activado" else "Estado: desactivado",
+                    text = if (pinEnabled) {
+                        stringResource(R.string.pin_status_on)
+                    } else {
+                        stringResource(R.string.pin_status_off)
+                    },
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = "El PIN nunca se guarda en texto plano (solo un hash con sal).",
+                    text = stringResource(R.string.pin_hash_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -82,14 +91,17 @@ fun PinSettingsScreen(
 
             if (!pinEnabled) {
                 SoftPanel {
-                    Text("Activar PIN", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.pin_activate),
+                        style = MaterialTheme.typography.titleMedium
+                    )
                     PinField(
-                        label = "Nuevo PIN",
+                        label = stringResource(R.string.pin_new_label),
                         value = state.newPin,
                         onValueChange = viewModel::onNewPinChange
                     )
                     PinField(
-                        label = "Confirmar PIN",
+                        label = stringResource(R.string.pin_confirm_label),
                         value = state.confirmPin,
                         onValueChange = viewModel::onConfirmPinChange
                     )
@@ -98,24 +110,33 @@ fun PinSettingsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !state.isBusy
                     ) {
-                        Text(if (state.isBusy) "Guardando…" else "Activar PIN")
+                        Text(
+                            if (state.isBusy) {
+                                stringResource(R.string.action_saving)
+                            } else {
+                                stringResource(R.string.pin_activate)
+                            }
+                        )
                     }
                 }
             } else {
                 SoftPanel {
-                    Text("Cambiar PIN", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.pin_change),
+                        style = MaterialTheme.typography.titleMedium
+                    )
                     PinField(
-                        label = "PIN actual",
+                        label = stringResource(R.string.pin_current_label),
                         value = state.currentPin,
                         onValueChange = viewModel::onCurrentPinChange
                     )
                     PinField(
-                        label = "Nuevo PIN",
+                        label = stringResource(R.string.pin_new_label),
                         value = state.newPin,
                         onValueChange = viewModel::onNewPinChange
                     )
                     PinField(
-                        label = "Confirmar nuevo PIN",
+                        label = stringResource(R.string.pin_confirm_new_label),
                         value = state.confirmPin,
                         onValueChange = viewModel::onConfirmPinChange
                     )
@@ -124,14 +145,23 @@ fun PinSettingsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !state.isBusy
                     ) {
-                        Text(if (state.isBusy) "Guardando…" else "Cambiar PIN")
+                        Text(
+                            if (state.isBusy) {
+                                stringResource(R.string.action_saving)
+                            } else {
+                                stringResource(R.string.pin_change)
+                            }
+                        )
                     }
                 }
 
                 SoftPanel {
-                    Text("Desactivar PIN", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.pin_disable),
+                        style = MaterialTheme.typography.titleMedium
+                    )
                     PinField(
-                        label = "PIN actual",
+                        label = stringResource(R.string.pin_current_label),
                         value = state.disablePin,
                         onValueChange = viewModel::onDisablePinChange
                     )
@@ -140,7 +170,7 @@ fun PinSettingsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !state.isBusy
                     ) {
-                        Text("Desactivar bloqueo")
+                        Text(stringResource(R.string.pin_disable))
                     }
                 }
             }

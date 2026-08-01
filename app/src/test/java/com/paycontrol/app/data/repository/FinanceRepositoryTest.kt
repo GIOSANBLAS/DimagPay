@@ -6,6 +6,7 @@ import com.paycontrol.app.data.local.AppDatabase
 import com.paycontrol.app.domain.model.AccountType
 import com.paycontrol.app.domain.model.TransactionType
 import com.paycontrol.app.domain.util.DateTimeUtils
+import com.paycontrol.app.domain.util.DomainStrings
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -34,9 +35,10 @@ class FinanceRepositoryTest {
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        finance = FinanceRepository(context, db)
-        clients = ClientRepository(db)
-        suppliers = SupplierRepository(db)
+        val messages = DomainStrings(context)
+        finance = FinanceRepository(context, db, messages)
+        clients = ClientRepository(db, messages)
+        suppliers = SupplierRepository(db, messages)
     }
 
     @After

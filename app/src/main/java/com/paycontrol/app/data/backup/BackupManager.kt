@@ -261,9 +261,12 @@ class BackupManager(
     }
 
     private fun requirePassword(password: String) {
-        BackupPasswordPolicy.validate(password)?.let { reason ->
+        BackupPasswordPolicy.validate(password)?.let { issue ->
             throw IllegalArgumentException(
-                "Contraseña de respaldo inválida: $reason"
+                context.getString(
+                    com.paycontrol.app.R.string.backup_password_invalid,
+                    BackupPasswordPolicy.issueMessage(issue, context.resources)
+                )
             )
         }
     }

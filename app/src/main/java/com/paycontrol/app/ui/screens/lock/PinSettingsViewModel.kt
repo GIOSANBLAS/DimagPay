@@ -1,7 +1,9 @@
 package com.paycontrol.app.ui.screens.lock
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.paycontrol.app.R
 import com.paycontrol.app.data.preferences.UserPreferencesRepository
 import com.paycontrol.app.domain.util.AppLog
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +28,7 @@ data class PinSettingsUiState(
 
 @HiltViewModel
 class PinSettingsViewModel @Inject constructor(
+    private val app: Application,
     private val preferences: UserPreferencesRepository
 ) : ViewModel() {
 
@@ -63,13 +66,13 @@ class PinSettingsViewModel @Inject constructor(
             runCatching { preferences.setPin(state.newPin) }
                 .onSuccess {
                     _ui.value = PinSettingsUiState(
-                        message = "PIN activado correctamente",
+                        message = app.getString(R.string.msg_pin_activated),
                         messageIsError = false
                     )
                 }
                 .onFailure { error ->
                     AppLog.e(TAG, "Error al activar PIN", error)
-                    showError("No se pudo activar el PIN")
+                    showError(app.getString(R.string.msg_pin_activate_failed))
                 }
         }
     }
@@ -77,7 +80,7 @@ class PinSettingsViewModel @Inject constructor(
     fun changePin() {
         val state = _ui.value
         if (!UserPreferencesRepository.isValidPinFormat(state.currentPin)) {
-            showError("Introduce tu PIN actual")
+            showError(app.getString(R.string.msg_pin_enter_current))
             return
         }
         val validation = validateNewPin(state.newPin, state.confirmPin)
@@ -94,11 +97,11 @@ class PinSettingsViewModel @Inject constructor(
             }.getOrDefault(false)
             if (ok) {
                 _ui.value = PinSettingsUiState(
-                    message = "PIN actualizado",
+                    message = app.getString(R.string.msg_pin_updated),
                     messageIsError = false
                 )
             } else {
-                showError("PIN actual incorrecto")
+                showError(app.getString(R.string.msg_pin_current_wrong))
             }
         }
     }
@@ -106,7 +109,7 @@ class PinSettingsViewModel @Inject constructor(
     fun disablePin() {
         val pin = _ui.value.disablePin
         if (!UserPreferencesRepository.isValidPinFormat(pin)) {
-            showError("Introduce tu PIN actual para desactivar")
+            showError(app.getString(R.string.msg_pin_enter_current_disable))
             return
         }
         viewModelScope.launch {
@@ -118,21 +121,21 @@ class PinSettingsViewModel @Inject constructor(
                 .getOrDefault(false)
             if (ok) {
                 _ui.value = PinSettingsUiState(
-                    message = "Bloqueo por PIN desactivado",
+                    message = app.getString(R.string.msg_pin_disabled),
                     messageIsError = false
                 )
             } else {
-                showError("PIN incorrecto")
+                showError(app.getString(R.string.pin_incorrect))
             }
         }
     }
 
     private fun validateNewPin(newPin: String, confirm: String): String? {
         if (!UserPreferencesRepository.isValidPinFormat(newPin)) {
-            return "El PIN debe tener entre 4 y 8 dígitos"
+            return app.getString(R.string.msg_pin_format)
         }
         if (newPin != confirm) {
-            return "Los PIN no coinciden"
+            return app.getString(R.string.msg_pin_mismatch)
         }
         return null
     }

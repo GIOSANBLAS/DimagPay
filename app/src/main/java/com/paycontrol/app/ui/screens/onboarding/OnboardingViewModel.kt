@@ -1,7 +1,9 @@
 package com.paycontrol.app.ui.screens.onboarding
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.paycontrol.app.R
 import com.paycontrol.app.data.preferences.UserPreferencesRepository
 import com.paycontrol.app.data.repository.FinanceRepository
 import com.paycontrol.app.domain.util.AppLog
@@ -25,6 +27,7 @@ data class WelcomeUiState(
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
+    private val app: Application,
     private val preferences: UserPreferencesRepository,
     private val financeRepository: FinanceRepository
 ) : ViewModel() {
@@ -58,7 +61,7 @@ class OnboardingViewModel @Inject constructor(
     fun completeWelcome() {
         val name = _welcome.value.name.trim()
         if (name.length < 2) {
-            _welcome.update { it.copy(error = "Escribe cómo quieres que te llamemos") }
+            _welcome.update { it.copy(error = app.getString(R.string.msg_onboarding_name_required)) }
             return
         }
         if (_welcome.value.isSaving) return
@@ -78,7 +81,7 @@ class OnboardingViewModel @Inject constructor(
                     _welcome.update {
                         it.copy(
                             isSaving = false,
-                            error = "No se pudo guardar tu nombre. Intenta de nuevo."
+                            error = app.getString(R.string.msg_settings_name_save_failed)
                         )
                     }
                     return@launch

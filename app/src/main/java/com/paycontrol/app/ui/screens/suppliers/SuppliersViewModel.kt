@@ -1,11 +1,13 @@
 package com.paycontrol.app.ui.screens.suppliers
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.paycontrol.app.R
 import com.paycontrol.app.data.contacts.DeviceContact
 import com.paycontrol.app.data.local.entity.AccountEntity
 import com.paycontrol.app.data.local.entity.SupplierEntity
@@ -42,6 +44,7 @@ data class SuppliersUiState(
 
 @HiltViewModel
 class SuppliersViewModel @Inject constructor(
+    private val app: Application,
     private val supplierRepository: SupplierRepository,
     private val financeRepository: FinanceRepository,
     private val uiErrorMapper: UiErrorMapper
@@ -113,13 +116,13 @@ class SuppliersViewModel @Inject constructor(
                 _uiState.update {
                     SuppliersUiState(
                         selectedAccountId = state.selectedAccountId,
-                        successMessage = "Proveedor creado"
+                        successMessage = app.getString(R.string.msg_supplier_created)
                     )
                 }
             }.onFailure { error ->
                 AppLog.e(TAG, "Error al crear proveedor", error)
                 _uiState.update {
-                    it.copy(errorMessage = friendlyError(error, "No se pudo crear el proveedor"))
+                    it.copy(errorMessage = friendlyError(error, app.getString(R.string.msg_supplier_create_failed)))
                 }
             }
         }
@@ -131,15 +134,15 @@ class SuppliersViewModel @Inject constructor(
         val accountId = state.selectedAccountId ?: accounts.value.firstOrNull()?.id
         val amount = Money.parseToCents(state.paymentAmount)
         if (supplierId == null) {
-            _uiState.update { it.copy(errorMessage = "Selecciona un proveedor de la lista") }
+            _uiState.update { it.copy(errorMessage = app.getString(R.string.msg_supplier_select)) }
             return
         }
         if (accountId == null) {
-            _uiState.update { it.copy(errorMessage = "Selecciona la cuenta de donde sale el pago") }
+            _uiState.update { it.copy(errorMessage = app.getString(R.string.msg_supplier_select_account)) }
             return
         }
         if (amount == null || amount <= 0L) {
-            _uiState.update { it.copy(errorMessage = "Monto de pago inválido") }
+            _uiState.update { it.copy(errorMessage = app.getString(R.string.msg_invalid_payment)) }
             return
         }
 
@@ -163,7 +166,7 @@ class SuppliersViewModel @Inject constructor(
                     it.copy(
                         paymentAmount = "",
                         isPaying = false,
-                        successMessage = "Pago de ${Money.format(amount)} a $supplierName · descontado de $accountName",
+                        successMessage = app.getString(R.string.msg_payment_ok, Money.format(amount), supplierName, accountName),
                         errorMessage = null
                     )
                 }
@@ -172,7 +175,7 @@ class SuppliersViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isPaying = false,
-                        errorMessage = friendlyError(error, "No se pudo registrar el pago")
+                        errorMessage = friendlyError(error, app.getString(R.string.msg_payment_failed))
                     )
                 }
             }
@@ -183,7 +186,7 @@ class SuppliersViewModel @Inject constructor(
         val state = _uiState.value
         val supplierId = state.selectedSupplierId
         if (supplierId == null) {
-            _uiState.update { it.copy(errorMessage = "Selecciona un proveedor de la lista") }
+            _uiState.update { it.copy(errorMessage = app.getString(R.string.msg_supplier_select)) }
             return
         }
         if (state.isBusy) return
@@ -196,7 +199,7 @@ class SuppliersViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isBusy = false,
-                        successMessage = "Proveedor actualizado",
+                        successMessage = app.getString(R.string.msg_supplier_updated),
                         errorMessage = null
                     )
                 }
@@ -205,7 +208,7 @@ class SuppliersViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isBusy = false,
-                        errorMessage = friendlyError(error, "No se pudo actualizar el proveedor")
+                        errorMessage = friendlyError(error, app.getString(R.string.msg_supplier_update_failed))
                     )
                 }
             }
@@ -216,7 +219,7 @@ class SuppliersViewModel @Inject constructor(
         val state = _uiState.value
         val supplierId = state.selectedSupplierId
         if (supplierId == null) {
-            _uiState.update { it.copy(errorMessage = "Selecciona un proveedor de la lista") }
+            _uiState.update { it.copy(errorMessage = app.getString(R.string.msg_supplier_select)) }
             return
         }
         if (state.isBusy) return
@@ -233,7 +236,7 @@ class SuppliersViewModel @Inject constructor(
                         editPhone = "",
                         paymentAmount = "",
                         isBusy = false,
-                        successMessage = "Proveedor eliminado",
+                        successMessage = app.getString(R.string.msg_supplier_deleted),
                         errorMessage = null
                     )
                 }
@@ -242,7 +245,7 @@ class SuppliersViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isBusy = false,
-                        errorMessage = friendlyError(error, "No se pudo eliminar el proveedor")
+                        errorMessage = friendlyError(error, app.getString(R.string.msg_supplier_delete_failed))
                     )
                 }
             }

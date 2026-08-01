@@ -1,11 +1,13 @@
 package com.paycontrol.app.ui.screens.clients
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.paycontrol.app.R
 import com.paycontrol.app.data.contacts.DeviceContact
 import com.paycontrol.app.data.local.entity.AccountEntity
 import com.paycontrol.app.data.local.entity.ClientEntity
@@ -44,6 +46,7 @@ data class ClientsUiState(
 
 @HiltViewModel
 class ClientsViewModel @Inject constructor(
+    private val app: Application,
     private val clientRepository: ClientRepository,
     private val financeRepository: FinanceRepository,
     private val uiErrorMapper: UiErrorMapper
@@ -117,7 +120,7 @@ class ClientsViewModel @Inject constructor(
         val state = _uiState.value
         val debt = if (state.debtInput.isBlank()) 0L else Money.parseToCents(state.debtInput)
         if (debt == null) {
-            _uiState.update { it.copy(errorMessage = "Deuda inicial inválida") }
+            _uiState.update { it.copy(errorMessage = app.getString(R.string.msg_invalid_initial_debt)) }
             return
         }
         viewModelScope.launch {
@@ -127,13 +130,13 @@ class ClientsViewModel @Inject constructor(
                 _uiState.update {
                     ClientsUiState(
                         selectedAccountId = state.selectedAccountId,
-                        successMessage = "Cliente creado"
+                        successMessage = app.getString(R.string.msg_client_created)
                     )
                 }
             }.onFailure { error ->
                 AppLog.e(TAG, "Error al crear cliente", error)
                 _uiState.update {
-                    it.copy(errorMessage = friendlyError(error, "No se pudo crear el cliente"))
+                    it.copy(errorMessage = friendlyError(error, app.getString(R.string.msg_client_create_failed)))
                 }
             }
         }
@@ -145,15 +148,15 @@ class ClientsViewModel @Inject constructor(
         val accountId = state.selectedAccountId ?: accounts.value.firstOrNull()?.id
         val amount = Money.parseToCents(state.paymentInput)
         if (clientId == null) {
-            _uiState.update { it.copy(errorMessage = "Selecciona un cliente de la lista") }
+            _uiState.update { it.copy(errorMessage = app.getString(R.string.msg_client_select)) }
             return
         }
         if (accountId == null) {
-            _uiState.update { it.copy(errorMessage = "Selecciona una cuenta destino") }
+            _uiState.update { it.copy(errorMessage = app.getString(R.string.msg_client_select_dest_account)) }
             return
         }
         if (amount == null || amount <= 0L) {
-            _uiState.update { it.copy(errorMessage = "Abono inválido") }
+            _uiState.update { it.copy(errorMessage = app.getString(R.string.msg_invalid_deposit)) }
             return
         }
 
@@ -177,7 +180,7 @@ class ClientsViewModel @Inject constructor(
                     it.copy(
                         paymentInput = "",
                         isPaying = false,
-                        successMessage = "Abono de ${Money.format(amount)} a $clientName · ingresó en $accountName",
+                        successMessage = app.getString(R.string.msg_deposit_ok, Money.format(amount), clientName, accountName),
                         errorMessage = null
                     )
                 }
@@ -186,7 +189,7 @@ class ClientsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isPaying = false,
-                        errorMessage = friendlyError(error, "No se pudo aplicar el abono")
+                        errorMessage = friendlyError(error, app.getString(R.string.msg_deposit_failed))
                     )
                 }
             }
@@ -198,11 +201,11 @@ class ClientsViewModel @Inject constructor(
         val clientId = state.selectedClientId
         val amount = Money.parseToCents(state.addDebtInput)
         if (clientId == null) {
-            _uiState.update { it.copy(errorMessage = "Selecciona un cliente de la lista") }
+            _uiState.update { it.copy(errorMessage = app.getString(R.string.msg_client_select)) }
             return
         }
         if (amount == null || amount <= 0L) {
-            _uiState.update { it.copy(errorMessage = "Monto de deuda inválido") }
+            _uiState.update { it.copy(errorMessage = app.getString(R.string.msg_invalid_debt_amount)) }
             return
         }
         if (state.isBusy) return
@@ -216,7 +219,7 @@ class ClientsViewModel @Inject constructor(
                     it.copy(
                         addDebtInput = "",
                         isBusy = false,
-                        successMessage = "Deuda agregada: ${Money.format(amount)}",
+                        successMessage = app.getString(R.string.msg_debt_added, Money.format(amount)),
                         errorMessage = null
                     )
                 }
@@ -225,7 +228,7 @@ class ClientsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isBusy = false,
-                        errorMessage = friendlyError(error, "No se pudo agregar la deuda")
+                        errorMessage = friendlyError(error, app.getString(R.string.msg_debt_add_failed))
                     )
                 }
             }
@@ -236,7 +239,7 @@ class ClientsViewModel @Inject constructor(
         val state = _uiState.value
         val clientId = state.selectedClientId
         if (clientId == null) {
-            _uiState.update { it.copy(errorMessage = "Selecciona un cliente de la lista") }
+            _uiState.update { it.copy(errorMessage = app.getString(R.string.msg_client_select)) }
             return
         }
         if (state.isBusy) return
@@ -249,7 +252,7 @@ class ClientsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isBusy = false,
-                        successMessage = "Cliente actualizado",
+                        successMessage = app.getString(R.string.msg_client_updated),
                         errorMessage = null
                     )
                 }
@@ -258,7 +261,7 @@ class ClientsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isBusy = false,
-                        errorMessage = friendlyError(error, "No se pudo actualizar el cliente")
+                        errorMessage = friendlyError(error, app.getString(R.string.msg_client_update_failed))
                     )
                 }
             }
@@ -269,7 +272,7 @@ class ClientsViewModel @Inject constructor(
         val state = _uiState.value
         val clientId = state.selectedClientId
         if (clientId == null) {
-            _uiState.update { it.copy(errorMessage = "Selecciona un cliente de la lista") }
+            _uiState.update { it.copy(errorMessage = app.getString(R.string.msg_client_select)) }
             return
         }
         if (state.isBusy) return
@@ -287,7 +290,7 @@ class ClientsViewModel @Inject constructor(
                         addDebtInput = "",
                         paymentInput = "",
                         isBusy = false,
-                        successMessage = "Cliente eliminado",
+                        successMessage = app.getString(R.string.msg_client_deleted),
                         errorMessage = null
                     )
                 }
@@ -296,7 +299,7 @@ class ClientsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isBusy = false,
-                        errorMessage = friendlyError(error, "No se pudo eliminar el cliente")
+                        errorMessage = friendlyError(error, app.getString(R.string.msg_client_delete_failed))
                     )
                 }
             }

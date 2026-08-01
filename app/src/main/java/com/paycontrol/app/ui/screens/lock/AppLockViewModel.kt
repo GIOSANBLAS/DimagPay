@@ -1,7 +1,9 @@
 package com.paycontrol.app.ui.screens.lock
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.paycontrol.app.R
 import com.paycontrol.app.data.preferences.UserPreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -24,6 +26,7 @@ data class LockUiState(
  */
 @HiltViewModel
 class AppLockViewModel @Inject constructor(
+    private val app: Application,
     private val preferences: UserPreferencesRepository
 ) : ViewModel() {
 
@@ -47,7 +50,7 @@ class AppLockViewModel @Inject constructor(
         val pin = _lockUi.value.pinInput
         if (!UserPreferencesRepository.isValidPinFormat(pin)) {
             _lockUi.update {
-                it.copy(error = "El PIN debe tener entre 4 y 8 dígitos")
+                it.copy(error = app.getString(R.string.msg_pin_format))
             }
             return
         }
@@ -64,7 +67,7 @@ class AppLockViewModel @Inject constructor(
                     it.copy(
                         isChecking = false,
                         pinInput = "",
-                        error = "PIN incorrecto"
+                        error = app.getString(R.string.pin_incorrect)
                     )
                 }
             }

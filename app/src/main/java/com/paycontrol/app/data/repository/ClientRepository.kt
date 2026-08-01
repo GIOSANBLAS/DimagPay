@@ -6,6 +6,7 @@ import com.paycontrol.app.data.local.dao.ClientDao
 import com.paycontrol.app.data.local.dao.TransactionDao
 import com.paycontrol.app.data.local.entity.ClientEntity
 import com.paycontrol.app.domain.util.AppLog
+import com.paycontrol.app.domain.util.DomainStrings
 import com.paycontrol.app.domain.util.Money
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.withContext
 
 class ClientRepository(
     private val database: AppDatabase,
+    private val messages: DomainStrings,
     private val clientDao: ClientDao = database.clientDao(),
     private val transactionDao: TransactionDao = database.transactionDao()
 ) {
@@ -52,9 +54,9 @@ class ClientRepository(
         initialDebtCents: Long = 0L
     ): Long = withContext(Dispatchers.IO) {
         val trimmed = name.trim()
-        require(trimmed.isNotBlank()) { "El nombre del cliente es obligatorio" }
-        require(trimmed.length <= 80) { "El nombre del cliente es demasiado largo" }
-        require(initialDebtCents >= 0L) { "La deuda inicial no puede ser negativa" }
+        require(trimmed.isNotBlank()) { messages.clientNameRequired() }
+        require(trimmed.length <= 80) { messages.clientNameTooLong() }
+        require(initialDebtCents >= 0L) { messages.initialDebtNegative() }
         clientDao.insert(
             ClientEntity(
                 name = trimmed,
@@ -65,19 +67,19 @@ class ClientRepository(
     }
 
     suspend fun addDebt(clientId: Long, amountCents: Long) = withContext(Dispatchers.IO) {
-        require(amountCents > 0L) { "El monto debe ser mayor a cero" }
+        require(amountCents > 0L) { messages.amountMustBePositive() }
         val client = clientDao.getById(clientId)
-            ?: error("Cliente no encontrado")
+            ?: error(messages.clientNotFound())
         clientDao.update(client.copy(totalDebt = Money.add(client.totalDebt, amountCents)))
     }
 
     suspend fun updateClient(clientId: Long, name: String, phone: String) =
         withContext(Dispatchers.IO) {
             val trimmed = name.trim()
-            require(trimmed.isNotBlank()) { "El nombre del cliente es obligatorio" }
-            require(trimmed.length <= 80) { "El nombre del cliente es demasiado largo" }
+            require(trimmed.isNotBlank()) { messages.clientNameRequired() }
+            require(trimmed.length <= 80) { messages.clientNameTooLong() }
             val client = clientDao.getById(clientId)
-                ?: error("Cliente no encontrado")
+                ?: error(messages.clientNotFound())
             clientDao.update(
                 client.copy(
                     name = trimmed,
@@ -96,7 +98,7 @@ class ClientRepository(
     suspend fun deleteById(clientId: Long) = withContext(Dispatchers.IO) {
         database.withTransaction {
             val client = clientDao.getById(clientId)
-                ?: error("Cliente no encontrado")
+                ?: error(messages.clientNotFound())
             transactionDao.clearRelatedClient(clientId)
             clientDao.delete(client)
         }

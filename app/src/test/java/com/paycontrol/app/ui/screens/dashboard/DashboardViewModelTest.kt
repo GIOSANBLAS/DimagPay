@@ -9,6 +9,7 @@ import com.paycontrol.app.data.repository.FinanceRepository
 import com.paycontrol.app.domain.model.AccountType
 import com.paycontrol.app.domain.model.TransactionType
 import com.paycontrol.app.domain.util.DateTimeUtils
+import com.paycontrol.app.domain.util.DomainStrings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -47,8 +48,9 @@ class DashboardViewModelTest {
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        finance = FinanceRepository(context, db)
-        clients = ClientRepository(db)
+        val messages = DomainStrings(context)
+        finance = FinanceRepository(context, db, messages)
+        clients = ClientRepository(db, messages)
         preferences = UserPreferencesRepository(
             context.getSharedPreferences("dashboard_vm_test", 0)
         )

@@ -3,6 +3,7 @@ package com.paycontrol.app.ui.screens.settings
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.paycontrol.app.R
 import com.paycontrol.app.data.preferences.UserPreferencesRepository
 import com.paycontrol.app.domain.util.AppLog
 import com.paycontrol.app.reminders.DebtReminderScheduler
@@ -71,7 +72,7 @@ class SettingsViewModel @Inject constructor(
         if (trimmed.length < 2) {
             _ui.update {
                 it.copy(
-                    savedHint = "Escribe al menos 2 caracteres",
+                    savedHint = appContext.getString(R.string.settings_name_too_short),
                     savedHintIsError = true
                 )
             }
@@ -84,7 +85,7 @@ class SettingsViewModel @Inject constructor(
                         it.copy(
                             nameDraft = trimmed,
                             nameDirty = false,
-                            savedHint = "Nombre actualizado",
+                            savedHint = appContext.getString(R.string.settings_name_updated),
                             savedHintIsError = false
                         )
                     }
@@ -93,7 +94,7 @@ class SettingsViewModel @Inject constructor(
                     AppLog.e(TAG, "Error al guardar nombre de perfil", error)
                     _ui.update {
                         it.copy(
-                            savedHint = "No se pudo guardar el nombre",
+                            savedHint = appContext.getString(R.string.msg_settings_name_save_failed),
                             savedHintIsError = true
                         )
                     }

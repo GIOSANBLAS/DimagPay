@@ -6,6 +6,7 @@ import com.paycontrol.app.data.local.AppDatabase
 import com.paycontrol.app.data.local.entity.TransactionEntity
 import com.paycontrol.app.domain.model.TransactionType
 import com.paycontrol.app.domain.util.DateTimeUtils
+import com.paycontrol.app.domain.util.DomainStrings
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -32,7 +33,7 @@ class ClientRepositoryTest {
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        clients = ClientRepository(db)
+        clients = ClientRepository(db, DomainStrings(context))
     }
 
     @After

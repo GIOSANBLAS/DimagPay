@@ -15,6 +15,7 @@ import com.paycontrol.app.domain.model.DefaultCategories
 import com.paycontrol.app.domain.model.TransactionType
 import com.paycontrol.app.domain.util.AppLog
 import com.paycontrol.app.domain.util.DateTimeUtils
+import com.paycontrol.app.domain.util.DomainStrings
 import com.paycontrol.app.domain.util.Money
 import com.paycontrol.app.ui.widget.BalanceWidgetProvider
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +35,7 @@ import kotlin.random.Random
 class FinanceRepository(
     context: Context,
     private val database: AppDatabase,
+    private val messages: DomainStrings = DomainStrings(context),
     private val accountDao: AccountDao = database.accountDao(),
     private val transactionDao: TransactionDao = database.transactionDao(),
     private val clientDao: ClientDao = database.clientDao(),
@@ -166,11 +168,11 @@ class FinanceRepository(
     ) = withContext(Dispatchers.IO) {
         database.withTransaction {
             val existing = accountDao.getById(id)
-                ?: error("Cuenta no encontrada")
+                ?: error(messages.accountNotFound())
             val trimmed = name.trim()
-            require(trimmed.isNotBlank()) { "El nombre de la cuenta es obligatorio" }
-            require(trimmed.length <= 80) { "El nombre de la cuenta es demasiado largo" }
-            require(type in AccountType.all) { "Tipo de cuenta inválido" }
+            require(trimmed.isNotBlank()) { messages.accountNameRequired() }
+            require(trimmed.length <= 80) { messages.accountNameTooLong() }
+            require(type in AccountType.all) { messages.accountTypeInvalid() }
             accountDao.update(
                 existing.copy(name = trimmed, type = type)
             )
@@ -181,13 +183,10 @@ class FinanceRepository(
     suspend fun deleteAccount(id: Long) = withContext(Dispatchers.IO) {
         database.withTransaction {
             val existing = accountDao.getById(id)
-                ?: error("Cuenta no encontrada")
+                ?: error(messages.accountNotFound())
             val txCount = transactionDao.countByAccount(id)
             if (txCount > 0) {
-                error(
-                    "No se puede eliminar «${existing.name}»: tiene $txCount " +
-                        if (txCount == 1) "movimiento registrado" else "movimientos registrados"
-                )
+                error(messages.cannotDeleteAccount(existing.name, txCount))
             }
             accountDao.delete(existing)
         }
@@ -220,12 +219,12 @@ class FinanceRepository(
         accountId: Long,
         amountCents: Long
     ): Long = withContext(Dispatchers.IO) {
-        require(amountCents > 0L) { "El abono debe ser mayor a cero" }
+        require(amountCents > 0L) { messages.depositMustBePositive() }
         database.withTransaction {
             val client = clientDao.getById(clientId)
-                ?: error("Cliente no encontrado")
+                ?: error(messages.clientNotFound())
             require(amountCents <= client.totalDebt) {
-                "El abono supera la deuda pendiente (${Money.format(client.totalDebt)})"
+                messages.depositExceedsDebt(Money.format(client.totalDebt))
             }
             val txId = applyTransactionLocked(
                 accountId = accountId,
@@ -249,10 +248,10 @@ class FinanceRepository(
         accountId: Long,
         amountCents: Long
     ): Long = withContext(Dispatchers.IO) {
-        require(amountCents > 0L) { "El pago debe ser mayor a cero" }
+        require(amountCents > 0L) { messages.paymentMustBePositive() }
         database.withTransaction {
             val supplier = supplierDao.getById(supplierId)
-                ?: error("Proveedor no encontrado")
+                ?: error(messages.supplierNotFound())
             val txId = applyTransactionLocked(
                 accountId = accountId,
                 amountCents = amountCents,
@@ -280,16 +279,16 @@ class FinanceRepository(
         note: String = ""
     ) = withContext(Dispatchers.IO) {
         require(fromAccountId != toAccountId) {
-            "La cuenta de origen y destino deben ser diferentes"
+            messages.transferSameAccount()
         }
-        require(amountCents > 0L) { "El monto debe ser mayor a cero" }
+        require(amountCents > 0L) { messages.amountMustBePositive() }
         database.withTransaction {
             val from = accountDao.getById(fromAccountId)
-                ?: error("Cuenta de origen no encontrada")
+                ?: error(messages.sourceAccountNotFound())
             val to = accountDao.getById(toAccountId)
-                ?: error("Cuenta de destino no encontrada")
+                ?: error(messages.destAccountNotFound())
             if (from.balance < amountCents) {
-                error("Saldo insuficiente en «${from.name}» (${Money.format(from.balance)})")
+                error(messages.insufficientBalance(from.name, from.balance))
             }
 
             val now = DateTimeUtils.nowEpochMillis()
@@ -335,7 +334,7 @@ class FinanceRepository(
     suspend fun deleteTransaction(id: Long) = withContext(Dispatchers.IO) {
         database.withTransaction {
             val tx = transactionDao.getById(id)
-                ?: error("Movimiento no encontrado")
+                ?: error(messages.transactionNotFound())
 
             if (tx.type == TransactionType.TRANSFER) {
                 deleteTransferPairLocked(tx)
@@ -343,19 +342,16 @@ class FinanceRepository(
             }
 
             val account = accountDao.getById(tx.accountId)
-                ?: error("Cuenta no encontrada")
+                ?: error(messages.accountNotFound())
             val newBalance = when (tx.type) {
                 TransactionType.INCOME -> {
                     if (account.balance < tx.amount) {
-                        error(
-                            "Saldo insuficiente en «${account.name}» " +
-                                "(${Money.format(account.balance)}) para revertir el ingreso"
-                        )
+                        error(messages.insufficientBalanceRevert(account.name, account.balance))
                     }
                     Money.subtract(account.balance, tx.amount)
                 }
                 TransactionType.EXPENSE -> Money.add(account.balance, tx.amount)
-                else -> error("Tipo inválido")
+                else -> error(messages.invalidType())
             }
             accountDao.update(account.copy(balance = newBalance))
 
@@ -371,7 +367,7 @@ class FinanceRepository(
                 val supplier = supplierDao.getById(supplierId)
                 if (supplier != null) {
                     if (supplier.totalPaid < tx.amount) {
-                        error("No se puede revertir el pago: acumulado inconsistente")
+                        error(messages.cannotRevertSupplierPayment())
                     }
                     supplierDao.update(
                         supplier.copy(totalPaid = Money.subtract(supplier.totalPaid, tx.amount))
@@ -395,21 +391,18 @@ class FinanceRepository(
 
         legs.forEach { leg ->
             val account = accountDao.getById(leg.accountId)
-                ?: error("Cuenta no encontrada")
+                ?: error(messages.accountNotFound())
             val isOutbound = when {
                 leg.transferIsOutbound != null -> leg.transferIsOutbound == true
                 leg.note.startsWith("Transferencia a") -> true
                 leg.note.startsWith("Transferencia desde") -> false
-                else -> error("Tipo de transferencia inválido")
+                else -> error(messages.invalidTransferType())
             }
             val newBalance = if (isOutbound) {
                 Money.add(account.balance, leg.amount)
             } else {
                 if (account.balance < leg.amount) {
-                    error(
-                        "Saldo insuficiente en «${account.name}» " +
-                            "(${Money.format(account.balance)})"
-                    )
+                    error(messages.insufficientBalance(account.name, account.balance))
                 }
                 Money.subtract(account.balance, leg.amount)
             }
@@ -424,10 +417,10 @@ class FinanceRepository(
         initialBalanceCents: Long
     ): Long {
         val trimmed = name.trim()
-        require(trimmed.isNotBlank()) { "El nombre de la cuenta es obligatorio" }
-        require(trimmed.length <= 80) { "El nombre de la cuenta es demasiado largo" }
-        require(type in AccountType.all) { "Tipo de cuenta inválido" }
-        require(initialBalanceCents >= 0L) { "El saldo inicial no puede ser negativo" }
+        require(trimmed.isNotBlank()) { messages.accountNameRequired() }
+        require(trimmed.length <= 80) { messages.accountNameTooLong() }
+        require(type in AccountType.all) { messages.accountTypeInvalid() }
+        require(initialBalanceCents >= 0L) { messages.initialBalanceNegative() }
         return accountDao.insert(
             AccountEntity(
                 name = trimmed,
@@ -447,21 +440,21 @@ class FinanceRepository(
         relatedClientId: Long? = null,
         relatedSupplierId: Long? = null
     ): Long {
-        require(amountCents > 0L) { "El monto debe ser mayor a cero" }
+        require(amountCents > 0L) { messages.amountMustBePositive() }
         require(type == TransactionType.INCOME || type == TransactionType.EXPENSE) {
-            "Tipo inválido"
+            messages.invalidTransactionType()
         }
         val trimmedCategory = category.trim()
-        require(trimmedCategory.isNotBlank()) { "La categoría es obligatoria" }
+        require(trimmedCategory.isNotBlank()) { messages.categoryRequired() }
 
         val account = accountDao.getById(accountId)
-            ?: error("Cuenta no encontrada")
+            ?: error(messages.accountNotFound())
 
         val newBalance = when (type) {
             TransactionType.INCOME -> Money.add(account.balance, amountCents)
             else -> {
                 if (account.balance < amountCents) {
-                    error("Saldo insuficiente en «${account.name}» (${Money.format(account.balance)})")
+                    error(messages.insufficientBalance(account.name, account.balance))
                 }
                 Money.subtract(account.balance, amountCents)
             }

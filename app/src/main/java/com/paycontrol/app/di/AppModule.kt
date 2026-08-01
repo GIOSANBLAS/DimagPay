@@ -9,6 +9,7 @@ import com.paycontrol.app.data.preferences.UserPreferencesRepository
 import com.paycontrol.app.data.repository.ClientRepository
 import com.paycontrol.app.data.repository.FinanceRepository
 import com.paycontrol.app.data.repository.SupplierRepository
+import com.paycontrol.app.domain.util.DomainStrings
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -44,18 +45,23 @@ object AppModule {
     @Singleton
     fun provideFinanceRepository(
         @ApplicationContext context: Context,
-        database: AppDatabase
-    ): FinanceRepository = FinanceRepository(context, database)
+        database: AppDatabase,
+        messages: DomainStrings
+    ): FinanceRepository = FinanceRepository(context, database, messages)
 
     @Provides
     @Singleton
-    fun provideClientRepository(database: AppDatabase): ClientRepository =
-        ClientRepository(database)
+    fun provideClientRepository(
+        database: AppDatabase,
+        messages: DomainStrings
+    ): ClientRepository = ClientRepository(database, messages)
 
     @Provides
     @Singleton
-    fun provideSupplierRepository(database: AppDatabase): SupplierRepository =
-        SupplierRepository(database)
+    fun provideSupplierRepository(
+        database: AppDatabase,
+        messages: DomainStrings
+    ): SupplierRepository = SupplierRepository(database, messages)
 
     @Provides
     @Singleton
