@@ -36,7 +36,7 @@ Data (Repositories → Room/SQLCipher DAOs, Preferences, BackupManager)
 
 ## DI
 
-Dagger Hilt (`@HiltAndroidApp`, `@Module` en `di/AppModule.kt`). `AppViewModelFactory` se mantiene temporalmente como puente; pantallas migran a `hiltViewModel()`.
+Dagger Hilt (`@HiltAndroidApp`, `di/AppModule.kt`, `@HiltViewModel` + `hiltViewModel()`).
 
 ## Fechas
 
