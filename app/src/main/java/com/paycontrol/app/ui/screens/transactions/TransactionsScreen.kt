@@ -32,9 +32,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.paycontrol.app.R
 import com.paycontrol.app.data.local.entity.AccountEntity
 import com.paycontrol.app.data.local.entity.TransactionEntity
 import com.paycontrol.app.domain.model.DefaultCategories
@@ -52,6 +55,7 @@ fun TransactionsScreen(viewModel: TransactionsViewModel) {
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     val pagingItems = viewModel.pagedTransactions.collectAsLazyPagingItems()
     val pendingDelete = form.pendingDelete
+    val resources = LocalContext.current.resources
 
     LaunchedEffect(Unit) {
         viewModel.ensureDefaultAccount()
@@ -63,29 +67,41 @@ fun TransactionsScreen(viewModel: TransactionsViewModel) {
         }
     }
 
-    val categories = remember(form.type) {
-        if (form.type == TransactionType.INCOME) DefaultCategories.income
-        else DefaultCategories.expense
+    val categories = remember(form.type, resources) {
+        if (form.type == TransactionType.INCOME) {
+            DefaultCategories.income(resources)
+        } else {
+            DefaultCategories.expense(resources)
+        }
     }
 
     if (pendingDelete != null) {
+        val typeLabel = when (pendingDelete.type) {
+            TransactionType.INCOME -> stringResource(R.string.type_income)
+            TransactionType.EXPENSE -> stringResource(R.string.type_expense)
+            else -> pendingDelete.type
+        }
         AlertDialog(
             onDismissRequest = viewModel::dismissDeleteConfirm,
-            title = { Text("Eliminar movimiento") },
+            title = { Text(stringResource(R.string.transactions_delete_title)) },
             text = {
                 Text(
-                    "¿Eliminar ${pendingDelete.type} · ${pendingDelete.category} " +
-                        "(${Money.format(pendingDelete.amount)})? Se revertirá el saldo de la cuenta."
+                    stringResource(
+                        R.string.transactions_delete_body,
+                        typeLabel,
+                        pendingDelete.category,
+                        Money.format(pendingDelete.amount)
+                    )
                 )
             },
             confirmButton = {
                 TextButton(onClick = viewModel::confirmDeletePending) {
-                    Text("Eliminar")
+                    Text(stringResource(R.string.action_delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = viewModel::dismissDeleteConfirm) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -99,8 +115,8 @@ fun TransactionsScreen(viewModel: TransactionsViewModel) {
     ) {
         item(key = "title") {
             SectionTitle(
-                title = "Movimientos",
-                subtitle = "Registra ingresos y gastos con precisión."
+                title = stringResource(R.string.transactions_title),
+                subtitle = stringResource(R.string.transactions_subtitle)
             )
         }
 
@@ -119,7 +135,10 @@ fun TransactionsScreen(viewModel: TransactionsViewModel) {
         }
 
         item(key = "history_title") {
-            Text("Historial", style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.transactions_history),
+                style = MaterialTheme.typography.titleMedium
+            )
         }
 
         items(
@@ -155,26 +174,29 @@ private fun TransactionFormPanel(
 
     SoftPanel {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TransactionType.all.forEach { type ->
-                FilterChip(
-                    selected = form.type == type,
-                    onClick = { onTypeChange(type) },
-                    label = { Text(type) }
-                )
-            }
+            FilterChip(
+                selected = form.type == TransactionType.INCOME,
+                onClick = { onTypeChange(TransactionType.INCOME) },
+                label = { Text(stringResource(R.string.type_income)) }
+            )
+            FilterChip(
+                selected = form.type == TransactionType.EXPENSE,
+                onClick = { onTypeChange(TransactionType.EXPENSE) },
+                label = { Text(stringResource(R.string.type_expense)) }
+            )
         }
 
         AccountPickerField(
             accounts = accounts,
             selectedAccountId = form.accountId,
             onAccountSelected = onAccountSelected,
-            label = "Cuenta"
+            label = stringResource(R.string.label_account)
         )
 
         MoneyAmountField(
             value = form.amountInput,
             onValueChange = onAmountChange,
-            label = "Monto"
+            label = stringResource(R.string.label_amount)
         )
 
         Box(modifier = Modifier.fillMaxWidth()) {
@@ -183,7 +205,7 @@ private fun TransactionFormPanel(
                 onValueChange = {},
                 readOnly = true,
                 enabled = false,
-                label = { Text("Categoría") },
+                label = { Text(stringResource(R.string.label_category)) },
                 trailingIcon = {
                     Icon(Icons.Outlined.ArrowDropDown, contentDescription = null)
                 },
@@ -206,7 +228,7 @@ private fun TransactionFormPanel(
         if (categoryPicker) {
             AlertDialog(
                 onDismissRequest = { categoryPicker = false },
-                title = { Text("Categoría") },
+                title = { Text(stringResource(R.string.label_category)) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         categories.forEach { category ->
@@ -232,7 +254,7 @@ private fun TransactionFormPanel(
                 },
                 confirmButton = {
                     TextButton(onClick = { categoryPicker = false }) {
-                        Text("Cerrar")
+                        Text(stringResource(R.string.action_close))
                     }
                 }
             )
@@ -241,7 +263,7 @@ private fun TransactionFormPanel(
         OutlinedTextField(
             value = form.note,
             onValueChange = onNoteChange,
-            label = { Text("Nota (opcional)") },
+            label = { Text(stringResource(R.string.label_note_optional)) },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -250,7 +272,13 @@ private fun TransactionFormPanel(
             enabled = !form.isSaving,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(if (form.isSaving) "Guardando…" else "Guardar movimiento")
+            Text(
+                if (form.isSaving) {
+                    stringResource(R.string.action_saving)
+                } else {
+                    stringResource(R.string.transactions_save)
+                }
+            )
         }
         StatusMessage(form.errorMessage, form.successMessage)
     }
@@ -262,6 +290,11 @@ private fun TransactionHistoryItem(
     isDeleting: Boolean,
     onDeleteClick: () -> Unit
 ) {
+    val typeLabel = when (tx.type) {
+        TransactionType.INCOME -> stringResource(R.string.type_income)
+        TransactionType.EXPENSE -> stringResource(R.string.type_expense)
+        else -> tx.type
+    }
     val subtitle = remember(tx.amount, tx.note) {
         Money.format(tx.amount) + if (tx.note.isNotBlank()) " — ${tx.note}" else ""
     }
@@ -272,7 +305,7 @@ private fun TransactionHistoryItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("${tx.type} · ${tx.category}", fontWeight = FontWeight.Medium)
+                Text("$typeLabel · ${tx.category}", fontWeight = FontWeight.Medium)
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,
@@ -285,7 +318,7 @@ private fun TransactionHistoryItem(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Delete,
-                    contentDescription = "Eliminar movimiento",
+                    contentDescription = stringResource(R.string.transactions_delete_cd),
                     tint = MaterialTheme.colorScheme.error
                 )
             }

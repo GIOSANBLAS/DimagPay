@@ -1,8 +1,11 @@
 package com.paycontrol.app.domain.model
 
+import android.content.res.Resources
+import com.paycontrol.app.R
+
 /**
- * Tipos de cuenta bancaria / efectivo.
- * Persistidos como String en Room para flexibilidad offline.
+ * Tipos de cuenta. Los valores literales se persisten en Room;
+ * deben coincidir con [R.array.account_types].
  */
 object AccountType {
     const val CASH = "Efectivo"
@@ -11,6 +14,9 @@ object AccountType {
     const val OTHER = "Otro"
 
     val all = listOf(CASH, BANK, CARD, OTHER)
+
+    fun all(resources: Resources): List<String> =
+        resources.getStringArray(R.array.account_types).toList()
 }
 
 /**
@@ -21,14 +27,20 @@ object TransactionType {
     const val EXPENSE = "GASTO"
     const val TRANSFER = "TRANSFERENCIA"
 
-    /** Tipos del formulario de movimiento (sin transferencias entre cuentas). */
     val all = listOf(INCOME, EXPENSE)
 }
 
 object DefaultCategories {
+    /** Fallback offline / tests — debe coincidir con strings.xml */
     val income = listOf("Ventas", "Servicios", "Cobranza", "Intereses", "Otros ingresos")
     val expense = listOf("Compras", "Proveedores", "Nómina", "Renta", "Servicios", "Impuestos", "Otros gastos")
 
     const val CLIENT_PAYMENT = "Cobranza"
     const val SUPPLIER_PAYMENT = "Proveedores"
+
+    fun income(resources: Resources): List<String> =
+        resources.getStringArray(R.array.income_categories).toList()
+
+    fun expense(resources: Resources): List<String> =
+        resources.getStringArray(R.array.expense_categories).toList()
 }

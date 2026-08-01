@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ArrowDropDown
@@ -44,19 +46,19 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.paycontrol.app.R
 import com.paycontrol.app.data.local.entity.AccountEntity
 import com.paycontrol.app.data.local.entity.TransactionEntity
 import com.paycontrol.app.domain.model.TransactionType
+import com.paycontrol.app.domain.util.DateTimeUtils
 import com.paycontrol.app.domain.util.Money
 import com.paycontrol.app.ui.components.SectionTitle
 import com.paycontrol.app.ui.components.SoftPanel
 import com.paycontrol.app.ui.components.StatusMessage
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import kotlin.math.max
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -67,12 +69,17 @@ fun ReportsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
+    val pagingItems = viewModel.pagedTransactions.collectAsLazyPagingItems()
     val context = LocalContext.current
+    val listLoading = pagingItems.loadState.refresh is LoadState.Loading
 
     LaunchedEffect(Unit) {
         viewModel.shareEvents.collect { intent ->
             context.startActivity(
-                android.content.Intent.createChooser(intent, "Compartir reporte CSV")
+                android.content.Intent.createChooser(
+                    intent,
+                    context.getString(R.string.report_share_chooser)
+                )
             )
         }
     }
@@ -80,21 +87,24 @@ fun ReportsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Reportes") },
+                title = { Text(stringResource(R.string.reports_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Outlined.ArrowBack,
-                            contentDescription = "Volver"
+                            contentDescription = stringResource(R.string.action_back)
                         )
                     }
                 },
                 actions = {
                     IconButton(
                         onClick = viewModel::exportCsv,
-                        enabled = !state.isExporting && state.transactions.isNotEmpty()
+                        enabled = !state.isExporting && state.resultCount > 0
                     ) {
-                        Icon(Icons.Outlined.Share, contentDescription = "Exportar CSV")
+                        Icon(
+                            Icons.Outlined.Share,
+                            contentDescription = stringResource(R.string.report_export_csv)
+                        )
                     }
                 }
             )
@@ -109,41 +119,47 @@ fun ReportsScreen(
         ) {
             item(key = "title") {
                 SectionTitle(
-                    title = "Reportes",
-                    subtitle = "Filtra movimientos, consulta totales y exporta un CSV."
+                    title = stringResource(R.string.reports_title),
+                    subtitle = stringResource(R.string.reports_subtitle)
                 )
             }
 
             item(key = "filters") {
                 SoftPanel {
-                    Text("Periodo", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.report_period),
+                        style = MaterialTheme.typography.titleMedium
+                    )
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         DatePresetChip(
-                            label = "Hoy",
+                            label = stringResource(R.string.report_preset_today),
                             selected = state.datePreset == ReportDatePreset.TODAY,
                             onClick = { viewModel.onDatePreset(ReportDatePreset.TODAY) }
                         )
                         DatePresetChip(
-                            label = "7 días",
+                            label = stringResource(R.string.report_preset_7d),
                             selected = state.datePreset == ReportDatePreset.DAYS_7,
                             onClick = { viewModel.onDatePreset(ReportDatePreset.DAYS_7) }
                         )
                         DatePresetChip(
-                            label = "30 días",
+                            label = stringResource(R.string.report_preset_30d),
                             selected = state.datePreset == ReportDatePreset.DAYS_30,
                             onClick = { viewModel.onDatePreset(ReportDatePreset.DAYS_30) }
                         )
                         DatePresetChip(
-                            label = "Todo",
+                            label = stringResource(R.string.report_preset_all),
                             selected = state.datePreset == ReportDatePreset.ALL,
                             onClick = { viewModel.onDatePreset(ReportDatePreset.ALL) }
                         )
                     }
 
-                    Text("Tipo", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.report_type),
+                        style = MaterialTheme.typography.titleMedium
+                    )
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -151,17 +167,17 @@ fun ReportsScreen(
                         FilterChip(
                             selected = state.typeFilter == null,
                             onClick = { viewModel.onTypeFilter(null) },
-                            label = { Text("Todos") }
+                            label = { Text(stringResource(R.string.type_all)) }
                         )
                         FilterChip(
                             selected = state.typeFilter == TransactionType.INCOME,
                             onClick = { viewModel.onTypeFilter(TransactionType.INCOME) },
-                            label = { Text(TransactionType.INCOME) }
+                            label = { Text(stringResource(R.string.type_income)) }
                         )
                         FilterChip(
                             selected = state.typeFilter == TransactionType.EXPENSE,
                             onClick = { viewModel.onTypeFilter(TransactionType.EXPENSE) },
-                            label = { Text(TransactionType.EXPENSE) }
+                            label = { Text(stringResource(R.string.type_expense)) }
                         )
                     }
 
@@ -176,39 +192,54 @@ fun ReportsScreen(
                         onValueChange = viewModel::onCategoryQuery,
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        label = { Text("Categoría (opcional)") },
-                        placeholder = { Text("Ej. Ventas, Nómina…") }
+                        label = { Text(stringResource(R.string.report_category_optional)) },
+                        placeholder = { Text(stringResource(R.string.report_category_hint)) }
                     )
                 }
             }
 
             item(key = "totals") {
                 SoftPanel {
-                    Text("Totales del filtro", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.report_totals),
+                        style = MaterialTheme.typography.titleMedium
+                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        TotalMetric("Ingresos", Money.format(state.incomeCents))
-                        TotalMetric("Gastos", Money.format(state.expenseCents))
-                        TotalMetric("Neto", Money.format(state.netCents))
+                        TotalMetric(
+                            stringResource(R.string.dashboard_income),
+                            Money.format(state.incomeCents)
+                        )
+                        TotalMetric(
+                            stringResource(R.string.dashboard_expense),
+                            Money.format(state.expenseCents)
+                        )
+                        TotalMetric(
+                            stringResource(R.string.report_net),
+                            Money.format(state.netCents)
+                        )
                     }
                     Text(
-                        if (state.isLoading) {
-                            "Actualizando…"
-                        } else {
-                            "${state.transactions.size} movimiento(s)"
+                        when {
+                            state.isLoading || listLoading -> stringResource(R.string.report_updating)
+                            else -> stringResource(R.string.report_result_count, state.resultCount)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Button(
                         onClick = viewModel::exportCsv,
-                        enabled = !state.isExporting && state.transactions.isNotEmpty(),
+                        enabled = !state.isExporting && state.resultCount > 0,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            if (state.isExporting) "Exportando…" else "Exportar CSV"
+                            if (state.isExporting) {
+                                stringResource(R.string.report_exporting)
+                            } else {
+                                stringResource(R.string.report_export_csv)
+                            }
                         )
                     }
                     StatusMessage(state.errorMessage, state.successMessage)
@@ -223,25 +254,33 @@ fun ReportsScreen(
             }
 
             item(key = "list_title") {
-                Text("Movimientos", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.transactions_title),
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
 
-            if (!state.isLoading && state.transactions.isEmpty()) {
+            if (!listLoading && !state.isLoading &&
+                pagingItems.itemCount == 0 && state.resultCount == 0
+            ) {
                 item(key = "empty") {
                     SoftPanel {
                         Text(
-                            "No hay movimientos con estos filtros.",
+                            stringResource(R.string.report_empty_filter),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             } else {
                 items(
-                    items = state.transactions,
-                    key = { it.id },
+                    count = pagingItems.itemCount,
+                    key = pagingItems.itemKey { it.id },
                     contentType = { "tx" }
-                ) { tx ->
-                    ReportTransactionRow(tx)
+                ) { index ->
+                    val tx = pagingItems[index]
+                    if (tx != null) {
+                        ReportTransactionRow(tx)
+                    }
                 }
             }
         }
@@ -276,8 +315,9 @@ private fun AccountFilterField(
     val selected = remember(accounts, selectedAccountId) {
         accounts.firstOrNull { it.id == selectedAccountId }
     }
+    val allAccountsLabel = stringResource(R.string.report_all_accounts)
     val label = selected?.let { "${it.name} · ${Money.format(it.balance)}" }
-        ?: "Todas las cuentas"
+        ?: allAccountsLabel
 
     Box(modifier = Modifier.fillMaxWidth()) {
         OutlinedTextField(
@@ -285,7 +325,7 @@ private fun AccountFilterField(
             onValueChange = {},
             readOnly = true,
             enabled = false,
-            label = { Text("Cuenta") },
+            label = { Text(stringResource(R.string.report_account)) },
             trailingIcon = {
                 Icon(Icons.Outlined.ArrowDropDown, contentDescription = null)
             },
@@ -308,11 +348,11 @@ private fun AccountFilterField(
     if (showPicker) {
         AlertDialog(
             onDismissRequest = { showPicker = false },
-            title = { Text("Cuenta") },
+            title = { Text(stringResource(R.string.report_account)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = "Todas las cuentas",
+                        text = allAccountsLabel,
                         fontWeight = if (selected == null) FontWeight.SemiBold else FontWeight.Normal,
                         color = if (selected == null) {
                             MaterialTheme.colorScheme.primary
@@ -350,7 +390,7 @@ private fun AccountFilterField(
             },
             confirmButton = {
                 TextButton(onClick = { showPicker = false }) {
-                    Text("Cerrar")
+                    Text(stringResource(R.string.action_close))
                 }
             }
         )
@@ -382,7 +422,10 @@ private fun IncomeExpenseBarChart(
     val expenseLabel = Money.format(expenseCents)
 
     SoftPanel {
-        Text("Ingresos vs gastos", style = MaterialTheme.typography.titleMedium)
+        Text(
+            stringResource(R.string.report_income_vs_expense),
+            style = MaterialTheme.typography.titleMedium
+        )
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
@@ -424,7 +467,7 @@ private fun IncomeExpenseBarChart(
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    "Ingresos",
+                    stringResource(R.string.dashboard_income),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -432,7 +475,7 @@ private fun IncomeExpenseBarChart(
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    "Gastos",
+                    stringResource(R.string.dashboard_expense),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -445,12 +488,12 @@ private fun IncomeExpenseBarChart(
 @Composable
 private fun ReportTransactionRow(tx: TransactionEntity) {
     val isIncome = tx.type == TransactionType.INCOME
-    val dateLabel = remember(tx.date) {
-        SimpleDateFormat(
-            "dd MMM yyyy",
-            Locale.Builder().setLanguage("es").setRegion("MX").build()
-        ).format(Date(tx.date))
+    val typeLabel = when (tx.type) {
+        TransactionType.INCOME -> stringResource(R.string.type_income)
+        TransactionType.EXPENSE -> stringResource(R.string.type_expense)
+        else -> tx.type
     }
+    val dateLabel = remember(tx.date) { DateTimeUtils.formatDisplay(tx.date) }
     val amountLabel = remember(tx.amount, isIncome) {
         (if (isIncome) "+" else "−") + Money.format(tx.amount)
     }
@@ -463,7 +506,7 @@ private fun ReportTransactionRow(tx: TransactionEntity) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(tx.category, fontWeight = FontWeight.Medium)
                 Text(
-                    "$dateLabel · ${tx.type}",
+                    "$dateLabel · $typeLabel",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

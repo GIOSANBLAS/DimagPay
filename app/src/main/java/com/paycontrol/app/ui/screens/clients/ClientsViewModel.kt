@@ -45,7 +45,8 @@ data class ClientsUiState(
 @HiltViewModel
 class ClientsViewModel @Inject constructor(
     private val clientRepository: ClientRepository,
-    private val financeRepository: FinanceRepository
+    private val financeRepository: FinanceRepository,
+    private val uiErrorMapper: UiErrorMapper
 ) : ViewModel() {
 
     val clients: StateFlow<List<ClientEntity>> = clientRepository
@@ -303,7 +304,7 @@ class ClientsViewModel @Inject constructor(
     }
 
     private fun friendlyError(error: Throwable, fallback: String): String =
-        UiErrorMapper.map(error, fallback)
+        uiErrorMapper.map(error, fallback)
 
     companion object {
         private const val TAG = "ClientsVM"

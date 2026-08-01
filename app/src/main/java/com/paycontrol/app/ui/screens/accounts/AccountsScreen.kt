@@ -35,9 +35,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.paycontrol.app.R
 import com.paycontrol.app.data.local.entity.AccountEntity
 import com.paycontrol.app.domain.model.AccountType
 import com.paycontrol.app.domain.util.Money
@@ -60,20 +63,18 @@ fun AccountsScreen(
     if (state.showDeleteConfirm && selected != null) {
         AlertDialog(
             onDismissRequest = viewModel::dismissDeleteConfirm,
-            title = { Text("Eliminar cuenta") },
+            title = { Text(stringResource(R.string.accounts_delete_title)) },
             text = {
-                Text(
-                    "¿Eliminar «${selected.name}»? Solo es posible si no tiene movimientos."
-                )
+                Text(stringResource(R.string.accounts_delete_body, selected.name))
             },
             confirmButton = {
                 TextButton(onClick = viewModel::confirmDelete) {
-                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = viewModel::dismissDeleteConfirm) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -82,10 +83,13 @@ fun AccountsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Cuentas") },
+                title = { Text(stringResource(R.string.accounts_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Volver")
+                        Icon(
+                            Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back)
+                        )
                     }
                 }
             )
@@ -100,30 +104,30 @@ fun AccountsScreen(
         ) {
             item(key = "title") {
                 SectionTitle(
-                    title = "Cuentas",
-                    subtitle = "Efectivo, banco y otras formas de pago."
+                    title = stringResource(R.string.accounts_title),
+                    subtitle = stringResource(R.string.accounts_subtitle)
                 )
             }
 
             item(key = "create") {
                 SoftPanel {
-                    Text("Nueva cuenta", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.accounts_new), style = MaterialTheme.typography.titleMedium)
                     OutlinedTextField(
                         value = state.name,
                         onValueChange = viewModel::onNameChange,
-                        label = { Text("Nombre") },
+                        label = { Text(stringResource(R.string.label_name)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
                     AccountTypeDropdown(
                         selectedType = state.type,
                         onTypeSelected = viewModel::onTypeChange,
-                        label = "Tipo"
+                        label = stringResource(R.string.label_type)
                     )
                     MoneyAmountField(
                         value = state.initialBalanceInput,
                         onValueChange = viewModel::onInitialBalanceChange,
-                        label = "Saldo inicial (opcional)",
+                        label = stringResource(R.string.accounts_initial_balance_optional),
                         placeholder = "0.00"
                     )
                     Button(
@@ -131,7 +135,13 @@ fun AccountsScreen(
                         enabled = !state.isSaving,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(if (state.isSaving) "Guardando…" else "Crear cuenta")
+                        Text(
+                            if (state.isSaving) {
+                                stringResource(R.string.action_saving)
+                            } else {
+                                stringResource(R.string.accounts_create)
+                            }
+                        )
                     }
                     if (selected == null) {
                         StatusMessage(state.errorMessage, state.successMessage)
@@ -141,9 +151,9 @@ fun AccountsScreen(
 
             item(key = "transfer") {
                 SoftPanel {
-                    Text("Transferir entre cuentas", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.accounts_transfer), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Mueve saldo de una cuenta a otra sin afectar ingresos ni gastos.",
+                        stringResource(R.string.accounts_transfer_desc),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -151,18 +161,18 @@ fun AccountsScreen(
                         accounts = accounts,
                         selectedAccountId = state.transferFromAccountId,
                         onAccountSelected = viewModel::onTransferFromAccountSelected,
-                        label = "Cuenta origen"
+                        label = stringResource(R.string.accounts_transfer_from)
                     )
                     AccountPickerField(
                         accounts = accounts,
                         selectedAccountId = state.transferToAccountId,
                         onAccountSelected = viewModel::onTransferToAccountSelected,
-                        label = "Cuenta destino"
+                        label = stringResource(R.string.accounts_transfer_to)
                     )
                     MoneyAmountField(
                         value = state.transferAmountInput,
                         onValueChange = viewModel::onTransferAmountChange,
-                        label = "Monto",
+                        label = stringResource(R.string.label_amount),
                         placeholder = "0.00"
                     )
                     val canTransfer = accounts.size >= 2 && !state.isSaving
@@ -173,9 +183,9 @@ fun AccountsScreen(
                     ) {
                         Text(
                             when {
-                                state.isSaving -> "Transferiendo…"
-                                accounts.size < 2 -> "Necesitas al menos 2 cuentas"
-                                else -> "Transferir"
+                                state.isSaving -> stringResource(R.string.accounts_transferring)
+                                accounts.size < 2 -> stringResource(R.string.accounts_need_two)
+                                else -> stringResource(R.string.accounts_transfer_action)
                             }
                         )
                     }
@@ -186,43 +196,43 @@ fun AccountsScreen(
             if (selected != null) {
                 item(key = "edit") {
                     SoftPanel {
-                        Text("Editar cuenta", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.accounts_edit), style = MaterialTheme.typography.titleMedium)
                         Text(
-                            "Saldo actual: ${Money.format(selected.balance)}",
+                            stringResource(R.string.accounts_current_balance, Money.format(selected.balance)),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         OutlinedTextField(
                             value = state.editName,
                             onValueChange = viewModel::onEditNameChange,
-                            label = { Text("Nombre") },
+                            label = { Text(stringResource(R.string.label_name)) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
                         AccountTypeDropdown(
                             selectedType = state.editType,
                             onTypeSelected = viewModel::onEditTypeChange,
-                            label = "Tipo"
+                            label = stringResource(R.string.label_type)
                         )
                         Button(
                             onClick = viewModel::updateAccount,
                             enabled = !state.isSaving,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Guardar cambios")
+                            Text(stringResource(R.string.action_save_changes))
                         }
                         OutlinedButton(
                             onClick = viewModel::requestDelete,
                             enabled = !state.isSaving,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Eliminar cuenta")
+                            Text(stringResource(R.string.accounts_delete_button))
                         }
                         TextButton(
                             onClick = viewModel::clearSelection,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Cancelar selección")
+                            Text(stringResource(R.string.accounts_cancel_selection))
                         }
                         StatusMessage(state.errorMessage, state.successMessage)
                     }
@@ -230,14 +240,14 @@ fun AccountsScreen(
             }
 
             item(key = "list_title") {
-                Text("Tus cuentas", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.accounts_yours), style = MaterialTheme.typography.titleMedium)
             }
 
             if (accounts.isEmpty()) {
                 item(key = "empty") {
                     SoftPanel {
                         Text(
-                            "Aún no hay cuentas. Crea una para empezar a registrar movimientos.",
+                            stringResource(R.string.accounts_empty),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -265,6 +275,15 @@ private fun AccountListItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
+    val resources = LocalContext.current.resources
+    val typeLabel = remember(account.type, resources) {
+        val index = AccountType.all.indexOf(account.type)
+        if (index >= 0) {
+            AccountType.all(resources)[index]
+        } else {
+            account.type
+        }
+    }
     SoftPanel(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
@@ -296,7 +315,7 @@ private fun AccountListItem(
                     }
                 )
                 Text(
-                    account.type,
+                    typeLabel,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -317,10 +336,17 @@ private fun AccountTypeDropdown(
     label: String
 ) {
     var showPicker by remember { mutableStateOf(false) }
+    val resources = LocalContext.current.resources
+    val persistedTypes = AccountType.all
+    val displayTypes = remember(resources) { AccountType.all(resources) }
+    val displaySelectedType = remember(selectedType, resources) {
+        val index = persistedTypes.indexOf(selectedType)
+        if (index >= 0) displayTypes[index] else selectedType
+    }
 
     Box(modifier = Modifier.fillMaxWidth()) {
         OutlinedTextField(
-            value = selectedType,
+            value = displaySelectedType,
             onValueChange = {},
             readOnly = true,
             enabled = false,
@@ -350,10 +376,11 @@ private fun AccountTypeDropdown(
             title = { Text(label) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    AccountType.all.forEach { type ->
-                        val isSelected = type == selectedType
+                    persistedTypes.forEachIndexed { index, persistedType ->
+                        val displayType = displayTypes[index]
+                        val isSelected = persistedType == selectedType
                         Text(
-                            text = type,
+                            text = displayType,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                             color = if (isSelected) {
                                 MaterialTheme.colorScheme.primary
@@ -363,7 +390,7 @@ private fun AccountTypeDropdown(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    onTypeSelected(type)
+                                    onTypeSelected(persistedType)
                                     showPicker = false
                                 }
                                 .padding(vertical = 12.dp)
@@ -373,7 +400,7 @@ private fun AccountTypeDropdown(
             },
             confirmButton = {
                 TextButton(onClick = { showPicker = false }) {
-                    Text("Cerrar")
+                    Text(stringResource(R.string.action_close))
                 }
             }
         )

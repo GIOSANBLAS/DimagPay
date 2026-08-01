@@ -29,9 +29,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.paycontrol.app.R
 import com.paycontrol.app.data.contacts.ContactsRepository
 import com.paycontrol.app.domain.util.Money
 import com.paycontrol.app.ui.components.AccountPickerField
@@ -64,9 +66,9 @@ fun SuppliersScreen(
     if (showDeleteConfirm && selectedSupplier != null) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Eliminar proveedor") },
+            title = { Text(stringResource(R.string.suppliers_delete_title)) },
             text = {
-                Text("¿Eliminar a «${selectedSupplier.name}»? Esta acción no se puede deshacer.")
+                Text(stringResource(R.string.suppliers_delete_body, selectedSupplier.name))
             },
             confirmButton = {
                 TextButton(
@@ -75,12 +77,12 @@ fun SuppliersScreen(
                         viewModel.deleteSelectedSupplier()
                     }
                 ) {
-                    Text("Eliminar")
+                    Text(stringResource(R.string.action_delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -94,25 +96,25 @@ fun SuppliersScreen(
     ) {
         item {
             SectionTitle(
-                title = "Proveedores",
-                subtitle = "Pagos vinculados a tu saldo"
+                title = stringResource(R.string.suppliers_title),
+                subtitle = stringResource(R.string.suppliers_subtitle)
             )
         }
 
         item {
             SoftPanel {
-                Text("Nuevo proveedor", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.suppliers_new), style = MaterialTheme.typography.titleMedium)
                 OutlinedTextField(
                     value = state.name,
                     onValueChange = viewModel::onNameChange,
-                    label = { Text("Nombre") },
+                    label = { Text(stringResource(R.string.label_name)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
                 OutlinedTextField(
                     value = state.phone,
                     onValueChange = viewModel::onPhoneChange,
-                    label = { Text("Teléfono") },
+                    label = { Text(stringResource(R.string.label_phone)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -120,25 +122,32 @@ fun SuppliersScreen(
                     onClick = viewModel::openContactPicker,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(Icons.Outlined.Contacts, contentDescription = "Importar contacto")
-                    Text("  Importar contacto")
+                    Icon(
+                        Icons.Outlined.Contacts,
+                        contentDescription = stringResource(R.string.import_contact)
+                    )
+                    Text("  ${stringResource(R.string.import_contact)}")
                 }
                 Button(
                     onClick = viewModel::createSupplier,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Agregar proveedor")
+                    Text(stringResource(R.string.suppliers_add))
                 }
             }
         }
 
         item {
             SoftPanel {
-                Text("Registrar pago", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.suppliers_register_payment), style = MaterialTheme.typography.titleMedium)
                 Text(
                     text = selectedSupplier?.let {
-                        "Proveedor: ${it.name} · Pagado ${Money.format(it.totalPaid)}"
-                    } ?: "Toca un proveedor abajo para pagar",
+                        stringResource(
+                            R.string.suppliers_pay_hint_selected,
+                            it.name,
+                            Money.format(it.totalPaid)
+                        )
+                    } ?: stringResource(R.string.suppliers_pay_hint_none),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -146,20 +155,24 @@ fun SuppliersScreen(
                     accounts = accounts,
                     selectedAccountId = state.selectedAccountId,
                     onAccountSelected = viewModel::onAccountSelected,
-                    label = "Cuenta de origen (efectivo/banco)"
+                    label = stringResource(R.string.suppliers_account_source)
                 )
                 val selectedAccount = accounts.firstOrNull { it.id == state.selectedAccountId }
                     ?: accounts.firstOrNull()
                 val paymentCents = Money.parseToCents(state.paymentAmount)
                 if (selectedAccount != null) {
                     Text(
-                        "Se descontará de ${selectedAccount.name} · disponible ${Money.format(selectedAccount.balance)}",
+                        stringResource(
+                            R.string.suppliers_will_debit,
+                            selectedAccount.name,
+                            Money.format(selectedAccount.balance)
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     if (paymentCents != null && paymentCents > selectedAccount.balance) {
                         Text(
-                            "Saldo insuficiente para este monto",
+                            stringResource(R.string.suppliers_insufficient_balance),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -168,7 +181,7 @@ fun SuppliersScreen(
                 MoneyAmountField(
                     value = state.paymentAmount,
                     onValueChange = viewModel::onPaymentAmountChange,
-                    label = "Monto del pago",
+                    label = stringResource(R.string.suppliers_payment_amount),
                     enabled = selectedSupplier != null
                 )
                 val insufficient = selectedAccount != null &&
@@ -185,10 +198,10 @@ fun SuppliersScreen(
                 ) {
                     Text(
                         when {
-                            state.isPaying -> "Registrando…"
-                            selectedSupplier == null -> "Selecciona un proveedor"
-                            insufficient -> "Saldo insuficiente"
-                            else -> "Registrar pago"
+                            state.isPaying -> stringResource(R.string.action_registering)
+                            selectedSupplier == null -> stringResource(R.string.suppliers_select)
+                            insufficient -> stringResource(R.string.suppliers_insufficient)
+                            else -> stringResource(R.string.suppliers_register_payment)
                         }
                     )
                 }
@@ -198,17 +211,18 @@ fun SuppliersScreen(
 
         item {
             SoftPanel {
-                Text("Gestionar proveedor", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.suppliers_manage), style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = selectedSupplier?.let { "Editando: ${it.name}" }
-                        ?: "Toca un proveedor abajo para editar o eliminar",
+                    text = selectedSupplier?.let {
+                        stringResource(R.string.suppliers_editing, it.name)
+                    } ?: stringResource(R.string.suppliers_manage_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 OutlinedTextField(
                     value = state.editName,
                     onValueChange = viewModel::onEditNameChange,
-                    label = { Text("Nombre") },
+                    label = { Text(stringResource(R.string.label_name)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     enabled = selectedSupplier != null && !state.isBusy
@@ -216,7 +230,7 @@ fun SuppliersScreen(
                 OutlinedTextField(
                     value = state.editPhone,
                     onValueChange = viewModel::onEditPhoneChange,
-                    label = { Text("Teléfono") },
+                    label = { Text(stringResource(R.string.label_phone)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     enabled = selectedSupplier != null && !state.isBusy
@@ -226,7 +240,7 @@ fun SuppliersScreen(
                     enabled = selectedSupplier != null && !state.isBusy,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Guardar cambios")
+                    Text(stringResource(R.string.action_save_changes))
                 }
                 OutlinedButton(
                     onClick = { showDeleteConfirm = true },
@@ -234,7 +248,7 @@ fun SuppliersScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        "Eliminar proveedor",
+                        stringResource(R.string.suppliers_delete_button),
                         color = if (selectedSupplier != null) {
                             MaterialTheme.colorScheme.error
                         } else {
@@ -249,7 +263,7 @@ fun SuppliersScreen(
             item {
                 SoftPanel {
                     Text(
-                        "Aún no hay proveedores. Crea uno o impórtalo desde contactos.",
+                        stringResource(R.string.suppliers_empty),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -292,7 +306,7 @@ fun SuppliersScreen(
                     if (supplier.phone.isNotBlank()) {
                         Text(supplier.phone, style = MaterialTheme.typography.bodySmall)
                     }
-                    Text("Total pagado: ${Money.format(supplier.totalPaid)}")
+                    Text(stringResource(R.string.suppliers_total_paid, Money.format(supplier.totalPaid)))
                 }
             }
         }

@@ -3,7 +3,6 @@ package com.paycontrol.app.ui.screens.dashboard
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,9 +37,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.paycontrol.app.R
 import com.paycontrol.app.data.local.entity.TransactionEntity
 import com.paycontrol.app.domain.model.TransactionType
 import com.paycontrol.app.domain.util.DateTimeUtils
@@ -56,8 +57,10 @@ fun DashboardScreen(
     onNavigate: (AppDestination) -> Unit
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val greeting = remember(state.displayName) {
-        if (state.displayName.isBlank()) "Tu resumen" else "Hola, ${state.displayName}"
+    val greeting = if (state.displayName.isBlank()) {
+        stringResource(R.string.dashboard_greeting_fallback)
+    } else {
+        stringResource(R.string.dashboard_greeting_named, state.displayName)
     }
     val balanceFormatted = remember(state.consolidatedBalanceCents) {
         Money.format(state.consolidatedBalanceCents)
@@ -101,7 +104,10 @@ fun DashboardScreen(
                     )
                 }
                 IconButton(onClick = { onNavigate(AppDestination.Settings) }) {
-                    Icon(Icons.Outlined.Settings, contentDescription = "Ajustes")
+                    Icon(
+                        Icons.Outlined.Settings,
+                        contentDescription = stringResource(R.string.settings)
+                    )
                 }
             }
         }
@@ -121,13 +127,13 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Shortcut(
-                        title = "Movimientos",
+                        title = stringResource(R.string.nav_transactions),
                         icon = Icons.Outlined.SwapHoriz,
                         modifier = Modifier.weight(1f),
                         onClick = { onNavigate(AppDestination.Transactions) }
                     )
                     Shortcut(
-                        title = "Reportes",
+                        title = stringResource(R.string.reports_title),
                         icon = Icons.Outlined.Assessment,
                         modifier = Modifier.weight(1f),
                         onClick = { onNavigate(AppDestination.Reports) }
@@ -138,19 +144,19 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Shortcut(
-                        title = "Proveedores",
+                        title = stringResource(R.string.nav_suppliers),
                         icon = Icons.Outlined.LocalShipping,
                         modifier = Modifier.weight(1f),
                         onClick = { onNavigate(AppDestination.Suppliers) }
                     )
                     Shortcut(
-                        title = "Clientes",
+                        title = stringResource(R.string.nav_clients),
                         icon = Icons.Outlined.Groups,
                         modifier = Modifier.weight(1f),
                         onClick = { onNavigate(AppDestination.Clients) }
                     )
                     Shortcut(
-                        title = "Cuentas",
+                        title = stringResource(R.string.accounts_title),
                         icon = Icons.Outlined.AccountBalanceWallet,
                         modifier = Modifier.weight(1f),
                         onClick = { onNavigate(AppDestination.Accounts) }
@@ -167,16 +173,19 @@ fun DashboardScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Saldo en cuentas", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.dashboard_balance_accounts),
+                        style = MaterialTheme.typography.titleMedium
+                    )
                     Text(accountsFormatted, fontWeight = FontWeight.Medium)
                 }
                 Text(
-                    "Por cobrar: $receivablesFormatted",
+                    stringResource(R.string.dashboard_receivables, receivablesFormatted),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.secondary
                 )
                 Text(
-                    "Toca para administrar cuentas",
+                    stringResource(R.string.dashboard_tap_manage_accounts),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -184,14 +193,17 @@ fun DashboardScreen(
         }
 
         item(key = "recent_title") {
-            Text("Últimas transacciones", style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.dashboard_recent),
+                style = MaterialTheme.typography.titleMedium
+            )
         }
 
         if (state.recentTransactions.isEmpty()) {
             item(key = "recent_empty") {
                 SoftPanel {
                     Text(
-                        "Aún no hay movimientos. Empieza en la pestaña Movimientos.",
+                        stringResource(R.string.dashboard_empty_tx),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -216,7 +228,7 @@ private fun BalanceSummaryCard(
 ) {
     HeroPanel {
         Text(
-            "Saldo en cuentas",
+            stringResource(R.string.dashboard_balance_accounts),
             style = MaterialTheme.typography.labelLarge,
             color = Color.White.copy(alpha = 0.78f)
         )
@@ -228,8 +240,8 @@ private fun BalanceSummaryCard(
         )
         Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-            Metric("Ingresos", income, Color.White)
-            Metric("Gastos", expense, Color.White.copy(alpha = 0.92f))
+            Metric(stringResource(R.string.dashboard_income), income, Color.White)
+            Metric(stringResource(R.string.dashboard_expense), expense, Color.White.copy(alpha = 0.92f))
         }
     }
 }
@@ -276,6 +288,11 @@ private fun Shortcut(
 private fun TransactionRow(tx: TransactionEntity) {
     val isTransfer = tx.type == TransactionType.TRANSFER
     val isIncome = tx.type == TransactionType.INCOME
+    val typeLabel = when (tx.type) {
+        TransactionType.INCOME -> stringResource(R.string.type_income)
+        TransactionType.EXPENSE -> stringResource(R.string.type_expense)
+        else -> tx.type
+    }
     val dateLabel = remember(tx.date) {
         DateTimeUtils.formatDisplay(tx.date)
     }
@@ -295,7 +312,7 @@ private fun TransactionRow(tx: TransactionEntity) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(tx.category, fontWeight = FontWeight.Medium)
                 Text(
-                    "$dateLabel · ${tx.type}",
+                    "$dateLabel · $typeLabel",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

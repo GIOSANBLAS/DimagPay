@@ -39,7 +39,7 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         const val NAME = "paycontrol_secure.db"
 
-        private val MIGRATION_1_2 = object : Migration(1, 2) {
+        val MIGRATION_1_2: Migration = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE transactions ADD COLUMN transferGroupId INTEGER")
                 db.execSQL("ALTER TABLE transactions ADD COLUMN transferIsOutbound INTEGER")
@@ -61,7 +61,7 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /** Índices compuestos para filtros de reportes + fechas UTC documentadas. */
-        private val MIGRATION_2_3 = object : Migration(2, 3) {
+        val MIGRATION_2_3: Migration = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_transactions_date_account_type " +

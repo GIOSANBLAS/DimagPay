@@ -17,7 +17,7 @@ import java.io.ByteArrayInputStream
  * Pruebas de cifrado de respaldo (sin filtrar la contraseña en asserts de mensaje).
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [28])
+@Config(sdk = [28], application = android.app.Application::class)
 class BackupManagerCryptoTest {
 
     @Test

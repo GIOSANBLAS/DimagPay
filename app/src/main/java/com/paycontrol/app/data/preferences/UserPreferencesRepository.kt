@@ -14,9 +14,13 @@ import kotlinx.coroutines.withContext
  * Preferencias cifradas (EncryptedSharedPreferences + Android Keystore).
  * El PIN se guarda solo como hash SHA-256 + sal; nunca en texto plano.
  */
-class UserPreferencesRepository(context: Context) {
+class UserPreferencesRepository internal constructor(
+    private val prefs: SharedPreferences
+) {
 
-    private val prefs: SharedPreferences = SecureStore.encryptedPrefs(context.applicationContext)
+    constructor(context: Context) : this(
+        SecureStore.encryptedPrefs(context.applicationContext)
+    )
 
     private val _displayName = MutableStateFlow(prefs.getString(Keys.DISPLAY_NAME, "").orEmpty())
     private val _onboardingDone = MutableStateFlow(prefs.getBoolean(Keys.ONBOARDING_DONE, false))

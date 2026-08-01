@@ -17,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Widget de saldo DimagPay. Si el PIN está activo, no muestra el monto.
@@ -45,17 +46,11 @@ class BalanceWidgetProvider : AppWidgetProvider() {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         scope.launch {
             try {
-                val app = context.applicationContext as? PayControlApp
-                val pinOn = app?.userPreferences?.pinEnabled?.value == true
-                val balanceText = when {
-                    app == null -> context.getString(R.string.widget_loading)
-                    pinOn -> context.getString(R.string.widget_locked)
-                    else -> runCatching {
-                        Money.format(app.financeRepository.getAccountsBalance())
-                    }.getOrElse { error ->
-                        AppLog.e(TAG, "Error al cargar saldo del widget", error)
-                        context.getString(R.string.widget_loading)
-                    }
+                val balanceText = withTimeoutOrNull(WIDGET_UPDATE_TIMEOUT_MS) {
+                    resolveBalanceText(context)
+                } ?: run {
+                    AppLog.w(TAG, context.getString(R.string.widget_timeout))
+                    context.getString(R.string.widget_loading)
                 }
                 val clickIntent = Intent(context, MainActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -75,14 +70,30 @@ class BalanceWidgetProvider : AppWidgetProvider() {
                     appWidgetManager.updateAppWidget(appWidgetId, views)
                 }
             } finally {
-                scope.cancel()
                 pendingResult.finish()
+                scope.cancel()
+            }
+        }
+    }
+
+    private suspend fun resolveBalanceText(context: Context): String {
+        val app = context.applicationContext as? PayControlApp
+        val pinOn = app?.userPreferences?.pinEnabled?.value == true
+        return when {
+            app == null -> context.getString(R.string.widget_loading)
+            pinOn -> context.getString(R.string.widget_locked)
+            else -> runCatching {
+                Money.format(app.financeRepository.getAccountsBalance())
+            }.getOrElse { error ->
+                AppLog.e(TAG, "Error al cargar saldo del widget", error)
+                context.getString(R.string.widget_loading)
             }
         }
     }
 
     companion object {
         private const val TAG = "BalanceWidget"
+        private const val WIDGET_UPDATE_TIMEOUT_MS = 5_000L
 
         fun requestUpdate(context: Context) {
             val appContext = context.applicationContext

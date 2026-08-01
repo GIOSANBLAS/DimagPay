@@ -6,6 +6,16 @@
     <string name="how_to_call_you">¿Cómo quieres que te llamemos?</string>
     <string name="display_name_hint">Tu nombre o apodo</string>
     <string name="continue_label">Continuar</string>
+    <string name="action_back">Volver</string>
+    <string name="action_save">Guardar</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_share">Compartir</string>
+
+    <string name="nav_home">Inicio</string>
+    <string name="nav_transactions">Movimientos</string>
+    <string name="nav_suppliers">Proveedores</string>
+    <string name="nav_clients">Clientes</string>
     <string name="settings">Ajustes</string>
     <string name="user_manual">Manual de usuario</string>
     <string name="about">Acerca de</string>
@@ -13,6 +23,140 @@
     <string name="team">Nuestro equipo</string>
     <string name="licenses">Licencias</string>
     <string name="privacy">Privacidad</string>
+
+    <string name="dashboard_summary">Resumen financiero</string>
+    <string name="dashboard_balance_accounts">Saldo en cuentas</string>
+    <string name="dashboard_receivables">Por cobrar: %1$s</string>
+    <string name="dashboard_recent">Últimas transacciones</string>
+    <string name="dashboard_empty_tx">Aún no hay movimientos. Empieza en la pestaña Movimientos.</string>
+    <string name="dashboard_income">Ingresos</string>
+    <string name="dashboard_expense">Gastos</string>
+    <string name="dashboard_greeting_fallback">Tu resumen</string>
+    <string name="dashboard_greeting_named">Hola, %1$s</string>
+
+    <string name="transactions_title">Movimientos</string>
+    <string name="transactions_subtitle">Registra ingresos y gastos con precisión.</string>
+    <string name="transactions_history">Historial</string>
+    <string name="transactions_delete_title">Eliminar movimiento</string>
+    <string name="transactions_delete_body">¿Eliminar %1$s · %2$s (%3$s)? Se revertirá el saldo de la cuenta.</string>
+    <string name="transactions_delete_cd">Eliminar movimiento</string>
+    <string name="transactions_save">Guardar movimiento</string>
+    <string name="transactions_saved">Movimiento registrado</string>
+    <string name="transactions_deleted">Movimiento eliminado</string>
+
+    <string name="label_name">Nombre</string>
+    <string name="label_phone">Teléfono</string>
+    <string name="label_account">Cuenta</string>
+    <string name="label_amount">Monto</string>
+    <string name="label_category">Categoría</string>
+    <string name="label_type">Tipo</string>
+    <string name="label_note_optional">Nota (opcional)</string>
+    <string name="action_save_changes">Guardar cambios</string>
+    <string name="action_saving">Guardando…</string>
+    <string name="action_registering">Registrando…</string>
+    <string name="action_processing">Procesando…</string>
+
+    <string name="dashboard_tap_manage_accounts">Toca para administrar cuentas</string>
+
+    <string name="clients_title">Clientes</string>
+    <string name="clients_subtitle_receivables">Por cobrar · %1$s</string>
+    <string name="clients_new">Nuevo cliente</string>
+    <string name="clients_initial_debt_optional">Deuda inicial (opcional)</string>
+    <string name="clients_add">Agregar cliente</string>
+    <string name="clients_pay_debt">Abonar a deuda</string>
+    <string name="clients_pay_hint_selected">Cliente: %1$s · Deuda %2$s</string>
+    <string name="clients_pay_hint_none">Toca un cliente abajo para abonar</string>
+    <string name="clients_account_dest">Cuenta destino (efectivo/banco)</string>
+    <string name="clients_will_credit">Ingresará a %1$s</string>
+    <string name="clients_payment_amount">Monto del abono</string>
+    <string name="clients_select_client">Selecciona un cliente</string>
+    <string name="clients_no_debt">Sin deuda pendiente</string>
+    <string name="clients_register_payment">Registrar abono</string>
+    <string name="clients_manage">Gestionar cliente</string>
+    <string name="clients_editing">Editando: %1$s</string>
+    <string name="clients_manage_hint">Toca un cliente abajo para editar, agregar deuda o eliminar</string>
+    <string name="clients_add_debt">Agregar deuda</string>
+    <string name="clients_delete_title">Eliminar cliente</string>
+    <string name="clients_delete_body">¿Eliminar a «%1$s»? Esta acción no se puede deshacer.</string>
+    <string name="clients_delete_button">Eliminar cliente</string>
+    <string name="clients_empty">Aún no hay clientes. Crea uno o impórtalo desde contactos.</string>
+    <string name="clients_status_pending">PENDIENTE</string>
+    <string name="clients_status_current">AL CORRIENTE</string>
+    <string name="clients_debt">Deuda: %1$s</string>
+
+    <string name="suppliers_title">Proveedores</string>
+    <string name="suppliers_subtitle">Pagos vinculados a tu saldo</string>
+    <string name="suppliers_new">Nuevo proveedor</string>
+    <string name="suppliers_add">Agregar proveedor</string>
+    <string name="suppliers_register_payment">Registrar pago</string>
+    <string name="suppliers_pay_hint_selected">Proveedor: %1$s · Pagado %2$s</string>
+    <string name="suppliers_pay_hint_none">Toca un proveedor abajo para pagar</string>
+    <string name="suppliers_account_source">Cuenta de origen (efectivo/banco)</string>
+    <string name="suppliers_will_debit">Se descontará de %1$s · disponible %2$s</string>
+    <string name="suppliers_insufficient_balance">Saldo insuficiente para este monto</string>
+    <string name="suppliers_payment_amount">Monto del pago</string>
+    <string name="suppliers_select">Selecciona un proveedor</string>
+    <string name="suppliers_insufficient">Saldo insuficiente</string>
+    <string name="suppliers_manage">Gestionar proveedor</string>
+    <string name="suppliers_editing">Editando: %1$s</string>
+    <string name="suppliers_manage_hint">Toca un proveedor abajo para editar o eliminar</string>
+    <string name="suppliers_delete_title">Eliminar proveedor</string>
+    <string name="suppliers_delete_body">¿Eliminar a «%1$s»? Esta acción no se puede deshacer.</string>
+    <string name="suppliers_delete_button">Eliminar proveedor</string>
+    <string name="suppliers_empty">Aún no hay proveedores. Crea uno o impórtalo desde contactos.</string>
+    <string name="suppliers_total_paid">Total pagado: %1$s</string>
+
+    <string name="accounts_title">Cuentas</string>
+    <string name="accounts_subtitle">Efectivo, banco y otras formas de pago.</string>
+    <string name="accounts_new">Nueva cuenta</string>
+    <string name="accounts_initial_balance_optional">Saldo inicial (opcional)</string>
+    <string name="accounts_create">Crear cuenta</string>
+    <string name="accounts_transfer">Transferir entre cuentas</string>
+    <string name="accounts_transfer_desc">Mueve saldo de una cuenta a otra sin afectar ingresos ni gastos.</string>
+    <string name="accounts_transfer_from">Cuenta origen</string>
+    <string name="accounts_transfer_to">Cuenta destino</string>
+    <string name="accounts_transferring">Transferiendo…</string>
+    <string name="accounts_need_two">Necesitas al menos 2 cuentas</string>
+    <string name="accounts_transfer_action">Transferir</string>
+    <string name="accounts_edit">Editar cuenta</string>
+    <string name="accounts_current_balance">Saldo actual: %1$s</string>
+    <string name="accounts_delete_title">Eliminar cuenta</string>
+    <string name="accounts_delete_body">¿Eliminar «%1$s»? Solo es posible si no tiene movimientos.</string>
+    <string name="accounts_delete_button">Eliminar cuenta</string>
+    <string name="accounts_cancel_selection">Cancelar selección</string>
+    <string name="accounts_yours">Tus cuentas</string>
+    <string name="accounts_empty">Aún no hay cuentas. Crea una para empezar a registrar movimientos.</string>
+    <string name="backup_title">Respaldo</string>
+
+    <string name="reports_title">Reportes</string>
+    <string name="reports_subtitle">Filtra movimientos, consulta totales y exporta un CSV.</string>
+    <string name="report_period">Periodo</string>
+    <string name="report_totals">Totales del filtro</string>
+    <string name="report_updating">Actualizando…</string>
+    <string name="report_result_count">%1$d movimiento(s)</string>
+    <string name="report_export_csv">Exportar CSV</string>
+    <string name="report_exporting">Exportando…</string>
+    <string name="report_empty_filter">No hay movimientos con estos filtros.</string>
+    <string name="report_share_chooser">Compartir reporte CSV</string>
+    <string name="report_csv_ready">CSV listo para compartir</string>
+    <string name="report_csv_subject">Reporte DimagPay</string>
+    <string name="report_preset_today">Hoy</string>
+    <string name="report_preset_7d">7 días</string>
+    <string name="report_preset_30d">30 días</string>
+    <string name="report_preset_all">Todo</string>
+    <string name="report_all_accounts">Todas las cuentas</string>
+    <string name="report_account">Cuenta</string>
+    <string name="report_type">Tipo</string>
+    <string name="report_category_optional">Categoría (opcional)</string>
+    <string name="report_category_hint">Ej. Ventas, Nómina…</string>
+    <string name="report_income_vs_expense">Ingresos vs gastos</string>
+    <string name="report_net">Neto</string>
+    <string name="action_close">Cerrar</string>
+
+    <string name="type_income">Ingreso</string>
+    <string name="type_expense">Gasto</string>
+    <string name="type_all">Todos</string>
+
     <string name="import_contact">Importar contacto</string>
     <string name="contacts_permission_rationale">DimagPay usa tus contactos (locales y de Google sincronizados) solo para crear clientes o proveedores más rápido. No se suben a ningún servidor.</string>
     <string name="pin_lock_title">Bloqueo por PIN</string>
@@ -25,9 +169,10 @@
     <string name="pin_activate">Activar PIN</string>
     <string name="pin_change">Cambiar PIN</string>
     <string name="pin_disable">Desactivar bloqueo</string>
-    <string name="widget_description">Saldo consolidado de DimagPay</string>
+    <string name="widget_description">Saldo en cuentas de DimagPay</string>
     <string name="widget_loading">Cargando…</string>
     <string name="widget_locked">Bloqueado</string>
+    <string name="widget_timeout">Tiempo de espera al actualizar el widget</string>
     <string name="notification_channel_reminders">Recordatorios de cobranza</string>
     <string name="notification_channel_reminders_desc">Avisos diarios cuando tienes clientes por cobrar</string>
     <string name="reminder_body">Tienes %1$s por cobrar</string>
@@ -36,4 +181,43 @@
     <string name="settings_debt_reminders_subtitle_on">Aviso diario si hay saldos por cobrar</string>
     <string name="settings_debt_reminders_subtitle_off">Recibe un aviso diario de lo pendiente</string>
     <string name="settings_debt_reminders_permission_denied">Activa el permiso de notificaciones para recibir recordatorios</string>
+    <string name="settings_subtitle">Preferencias, ayuda y información formal de DimagPay.</string>
+    <string name="settings_display_name_title">Cómo te llamamos</string>
+    <string name="settings_name_updated">Nombre actualizado</string>
+    <string name="settings_name_too_short">Escribe al menos 2 caracteres</string>
+
+    <string name="error_unique_name">Ya existe un registro con ese nombre</string>
+    <string name="error_database_access">No se pudo acceder a los datos. Intenta de nuevo.</string>
+    <string name="error_report_load">No se pudo cargar el reporte</string>
+    <string name="error_report_export">No se pudo exportar el CSV</string>
+    <string name="error_report_empty_export">No hay movimientos para exportar</string>
+    <string name="error_generic">Algo salió mal. Intenta de nuevo.</string>
+
+    <string name="backup_weak_password_title">Contraseña débil</string>
+    <string name="backup_weak_password_body">La contraseña no cumple la política recomendada. ¿Deseas continuar con la restauración de todos modos?</string>
+    <string name="backup_continue_restore">Continuar restauración</string>
+
+    <!-- Valores persistidos en Room: no cambiar sin migración de datos -->
+    <string-array name="account_types">
+        <item>Efectivo</item>
+        <item>Banco</item>
+        <item>Tarjeta</item>
+        <item>Otro</item>
+    </string-array>
+    <string-array name="income_categories">
+        <item>Ventas</item>
+        <item>Servicios</item>
+        <item>Cobranza</item>
+        <item>Intereses</item>
+        <item>Otros ingresos</item>
+    </string-array>
+    <string-array name="expense_categories">
+        <item>Compras</item>
+        <item>Proveedores</item>
+        <item>Nómina</item>
+        <item>Renta</item>
+        <item>Servicios</item>
+        <item>Impuestos</item>
+        <item>Otros gastos</item>
+    </string-array>
 </resources>

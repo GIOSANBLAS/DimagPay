@@ -35,10 +35,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.paycontrol.app.R
 import com.paycontrol.app.data.backup.BackupManager
 import com.paycontrol.app.domain.util.BackupPasswordPolicy
 import com.paycontrol.app.security.AppLockGate
@@ -104,6 +106,35 @@ fun BackupScreen(
             onDismiss = viewModel::dismissRestoreConfirm,
             onConfirm = { password, _ ->
                 viewModel.confirmRestore(password)
+            }
+        )
+    }
+
+    if (state.showWeakRestorePasswordConfirm) {
+        AlertDialog(
+            onDismissRequest = viewModel::dismissWeakRestorePasswordConfirm,
+            title = { Text(stringResource(R.string.backup_weak_password_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.backup_weak_password_body))
+                    state.weakPasswordReason?.let { reason ->
+                        Text(
+                            reason,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = viewModel::proceedWeakPasswordRestore) {
+                    Text(stringResource(R.string.backup_continue_restore))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::dismissWeakRestorePasswordConfirm) {
+                    Text(stringResource(R.string.action_cancel))
+                }
             }
         )
     }

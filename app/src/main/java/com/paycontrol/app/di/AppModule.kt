@@ -1,6 +1,7 @@
 package com.paycontrol.app.di
 
 import android.content.Context
+import android.content.res.Resources
 import com.paycontrol.app.data.backup.BackupManager
 import com.paycontrol.app.data.contacts.ContactsRepository
 import com.paycontrol.app.data.local.AppDatabase
@@ -18,6 +19,11 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+
+    @Provides
+    @Singleton
+    fun provideResources(@ApplicationContext context: Context): Resources =
+        context.resources
 
     @Provides
     @Singleton

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DimagPay</string>
+    <string name="welcome_title">Welcome to DimagPay</string>
+    <string name="welcome_subtitle">Your finances, clear and private.</string>
+    <string name="how_to_call_you">What should we call you?</string>
+    <string name="display_name_hint">Your name or nickname</string>
+    <string name="continue_label">Continue</string>
+    <string name="action_back">Back</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_share">Share</string>
+    <string name="settings">Settings</string>
+    <string name="reports_title">Reports</string>
+    <string name="reports_subtitle">Filter transactions, view totals, and export CSV.</string>
+    <string name="transactions_title">Transactions</string>
+    <string name="error_unique_name">A record with that name already exists</string>
+    <string name="error_database_access">Could not access data. Please try again.</string>
+    <string name="error_report_load">Could not load the report</string>
+    <string name="error_report_export">Could not export the CSV</string>
+    <string name="error_report_empty_export">There are no transactions to export</string>
+    <string name="widget_loading">Loading…</string>
+    <string name="widget_locked">Locked</string>
+    <string name="widget_description">DimagPay account balances</string>
+</resources>

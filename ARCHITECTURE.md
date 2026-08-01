@@ -45,3 +45,22 @@ Almacenadas como **epoch millis UTC** (`Instant`). Visualización y filtros de d
 ## Paginación
 
 Listas largas (movimientos, clientes, proveedores, reportes) usan **Paging 3** + `room-paging`. El dashboard conserva un “recientes” acotado.
+
+### Reportes
+
+- Lista: `ReportsViewModel.pagedTransactions` (`Pager` + `filteredTransactionsPagingSource`).
+- Totales: `StateFlow` aparte (`refreshTotals` / `getTransactionsFiltered`) para no materializar toda la lista en UI.
+- CSV: al exportar se vuelve a consultar con `getFiltered` (lista completa del filtro).
+
+## Fechas en reportes
+
+`ReportsViewModel.resolveRange` usa `LocalDate` + `DateTimeUtils` (sin `Calendar`).
+
+## i18n
+
+Textos de UI en `res/values/strings.xml` (ES). Categorías y tipos de cuenta también como `string-array` (`income_categories`, `expense_categories`, `account_types`); los literales persistidos en Room siguen siendo los valores en español.
+
+## Pruebas
+
+- Unitarias: `Money`, `BackupPasswordPolicy`, cifrado de respaldo, `FinanceRepository`, `ClientRepository`, `DashboardViewModel`, migraciones Room 1→3.
+- Stack: JUnit4, Truth, coroutines-test, Robolectric, Room in-memory.

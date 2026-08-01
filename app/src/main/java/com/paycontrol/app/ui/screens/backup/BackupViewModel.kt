@@ -26,7 +26,10 @@ data class BackupUiState(
     val isRestoring: Boolean = false,
     val showExportPassword: Boolean = false,
     val showRestoreConfirm: Boolean = false,
+    val showWeakRestorePasswordConfirm: Boolean = false,
     val pendingRestoreUri: Uri? = null,
+    val pendingRestorePassword: String? = null,
+    val weakPasswordReason: String? = null,
     val inventory: BackupManager.Inventory? = null,
     val errorMessage: String? = null,
     val successMessage: String? = null
@@ -35,7 +38,8 @@ data class BackupUiState(
 @HiltViewModel
 class BackupViewModel @Inject constructor(
     private val app: Application,
-    private val backupManager: BackupManager
+    private val backupManager: BackupManager,
+    private val uiErrorMapper: UiErrorMapper
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BackupUiState())
@@ -100,7 +104,7 @@ class BackupViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isExporting = false,
-                        errorMessage = UiErrorMapper.map(
+                        errorMessage = uiErrorMapper.map(
                             error,
                             "No se pudo crear el respaldo de DimagPay"
                         )
@@ -130,17 +134,71 @@ class BackupViewModel @Inject constructor(
 
     fun dismissRestoreConfirm() {
         _uiState.update {
-            it.copy(showRestoreConfirm = false, pendingRestoreUri = null)
+            it.copy(
+                showRestoreConfirm = false,
+                pendingRestoreUri = null,
+                pendingRestorePassword = null,
+                showWeakRestorePasswordConfirm = false,
+                weakPasswordReason = null
+            )
         }
     }
 
+    fun dismissWeakRestorePasswordConfirm() {
+        _uiState.update {
+            it.copy(
+                showWeakRestorePasswordConfirm = false,
+                pendingRestorePassword = null,
+                weakPasswordReason = null,
+                showRestoreConfirm = true
+            )
+        }
+    }
+
+    /**
+     * Valida la contraseña de restauración. Si no cumple la política, pide
+     * confirmación adicional pero **no** bloquea el descifrado.
+     */
     fun confirmRestore(password: String) {
         val uri = _uiState.value.pendingRestoreUri ?: return
         if (_uiState.value.isRestoring || _uiState.value.isExporting) return
+        val policyIssue = BackupPasswordPolicy.validate(password)
+        if (policyIssue != null) {
+            _uiState.update {
+                it.copy(
+                    showRestoreConfirm = false,
+                    showWeakRestorePasswordConfirm = true,
+                    pendingRestorePassword = password,
+                    weakPasswordReason = policyIssue,
+                    errorMessage = null,
+                    successMessage = null
+                )
+            }
+            return
+        }
+        performRestore(uri, password)
+    }
+
+    fun proceedWeakPasswordRestore() {
+        val uri = _uiState.value.pendingRestoreUri ?: return
+        val password = _uiState.value.pendingRestorePassword ?: return
+        if (_uiState.value.isRestoring || _uiState.value.isExporting) return
+        _uiState.update {
+            it.copy(
+                showWeakRestorePasswordConfirm = false,
+                pendingRestorePassword = null,
+                weakPasswordReason = null
+            )
+        }
+        performRestore(uri, password)
+    }
+
+    private fun performRestore(uri: Uri, password: String) {
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
                     showRestoreConfirm = false,
+                    showWeakRestorePasswordConfirm = false,
                     isRestoring = true,
                     errorMessage = null,
                     successMessage = null
@@ -157,6 +215,7 @@ class BackupViewModel @Inject constructor(
                     it.copy(
                         isRestoring = false,
                         pendingRestoreUri = null,
+                        pendingRestorePassword = null,
                         successMessage = "Datos de DimagPay restaurados correctamente"
                     )
                 }
@@ -166,7 +225,8 @@ class BackupViewModel @Inject constructor(
                     it.copy(
                         isRestoring = false,
                         pendingRestoreUri = null,
-                        errorMessage = UiErrorMapper.map(
+                        pendingRestorePassword = null,
+                        errorMessage = uiErrorMapper.map(
                             error,
                             "No se pudo restaurar el respaldo de DimagPay"
                         )

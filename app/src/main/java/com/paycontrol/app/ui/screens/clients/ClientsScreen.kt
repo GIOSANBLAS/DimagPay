@@ -29,9 +29,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.paycontrol.app.R
 import com.paycontrol.app.data.contacts.ContactsRepository
 import com.paycontrol.app.domain.util.Money
 import com.paycontrol.app.ui.components.AccountPickerField
@@ -65,9 +67,9 @@ fun ClientsScreen(
     if (showDeleteConfirm && selectedClient != null) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Eliminar cliente") },
+            title = { Text(stringResource(R.string.clients_delete_title)) },
             text = {
-                Text("¿Eliminar a «${selectedClient.name}»? Esta acción no se puede deshacer.")
+                Text(stringResource(R.string.clients_delete_body, selectedClient.name))
             },
             confirmButton = {
                 TextButton(
@@ -76,12 +78,12 @@ fun ClientsScreen(
                         viewModel.deleteSelectedClient()
                     }
                 ) {
-                    Text("Eliminar")
+                    Text(stringResource(R.string.action_delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -95,57 +97,64 @@ fun ClientsScreen(
     ) {
         item {
             SectionTitle(
-                title = "Clientes",
-                subtitle = "Por cobrar · ${Money.format(receivables)}"
+                title = stringResource(R.string.clients_title),
+                subtitle = stringResource(R.string.clients_subtitle_receivables, Money.format(receivables))
             )
         }
 
         item {
             SoftPanel {
-                Text("Nuevo cliente", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.clients_new), style = MaterialTheme.typography.titleMedium)
                 OutlinedTextField(
                     value = state.name,
                     onValueChange = viewModel::onNameChange,
-                    label = { Text("Nombre") },
+                    label = { Text(stringResource(R.string.label_name)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
                 OutlinedTextField(
                     value = state.phone,
                     onValueChange = viewModel::onPhoneChange,
-                    label = { Text("Teléfono") },
+                    label = { Text(stringResource(R.string.label_phone)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
                 MoneyAmountField(
                     value = state.debtInput,
                     onValueChange = viewModel::onDebtInputChange,
-                    label = "Deuda inicial (opcional)",
+                    label = stringResource(R.string.clients_initial_debt_optional),
                     placeholder = "0.00"
                 )
                 FilledTonalButton(
                     onClick = viewModel::openContactPicker,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(Icons.Outlined.Contacts, contentDescription = "Importar contacto")
-                    Text("  Importar contacto")
+                    Icon(
+                        Icons.Outlined.Contacts,
+                        contentDescription = stringResource(R.string.import_contact)
+                    )
+                    Text("  ${stringResource(R.string.import_contact)}")
                 }
                 Button(
                     onClick = viewModel::createClient,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Agregar cliente")
+                    Text(stringResource(R.string.clients_add))
                 }
             }
         }
 
         item {
             SoftPanel {
-                Text("Abonar a deuda", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.clients_pay_debt), style = MaterialTheme.typography.titleMedium)
                 Text(
                     text = selectedClient?.let {
-                        "Cliente: ${it.name} · Deuda ${Money.format(it.totalDebt)}"
-                    } ?: "Toca un cliente abajo para abonar",
+                        stringResource(
+                            R.string.clients_pay_hint_selected,
+                            it.name,
+                            Money.format(it.totalDebt)
+                        )
+                    } ?: stringResource(R.string.clients_pay_hint_none),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -153,13 +162,13 @@ fun ClientsScreen(
                     accounts = accounts,
                     selectedAccountId = state.selectedAccountId,
                     onAccountSelected = viewModel::onAccountSelected,
-                    label = "Cuenta destino (efectivo/banco)"
+                    label = stringResource(R.string.clients_account_dest)
                 )
                 val selectedAccount = accounts.firstOrNull { it.id == state.selectedAccountId }
                     ?: accounts.firstOrNull()
                 if (selectedAccount != null) {
                     Text(
-                        "Ingresará a ${selectedAccount.name}",
+                        stringResource(R.string.clients_will_credit, selectedAccount.name),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -167,7 +176,7 @@ fun ClientsScreen(
                 MoneyAmountField(
                     value = state.paymentInput,
                     onValueChange = viewModel::onPaymentInputChange,
-                    label = "Monto del abono",
+                    label = stringResource(R.string.clients_payment_amount),
                     enabled = selectedClient != null && (selectedClient.totalDebt > 0L)
                 )
                 val canPay = selectedClient != null &&
@@ -181,10 +190,10 @@ fun ClientsScreen(
                 ) {
                     Text(
                         when {
-                            state.isPaying -> "Registrando…"
-                            selectedClient == null -> "Selecciona un cliente"
-                            selectedClient.totalDebt <= 0L -> "Sin deuda pendiente"
-                            else -> "Registrar abono"
+                            state.isPaying -> stringResource(R.string.action_registering)
+                            selectedClient == null -> stringResource(R.string.clients_select_client)
+                            selectedClient.totalDebt <= 0L -> stringResource(R.string.clients_no_debt)
+                            else -> stringResource(R.string.clients_register_payment)
                         }
                     )
                 }
@@ -194,17 +203,18 @@ fun ClientsScreen(
 
         item {
             SoftPanel {
-                Text("Gestionar cliente", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.clients_manage), style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = selectedClient?.let { "Editando: ${it.name}" }
-                        ?: "Toca un cliente abajo para editar, agregar deuda o eliminar",
+                    text = selectedClient?.let {
+                        stringResource(R.string.clients_editing, it.name)
+                    } ?: stringResource(R.string.clients_manage_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 OutlinedTextField(
                     value = state.editName,
                     onValueChange = viewModel::onEditNameChange,
-                    label = { Text("Nombre") },
+                    label = { Text(stringResource(R.string.label_name)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     enabled = selectedClient != null && !state.isBusy
@@ -212,7 +222,7 @@ fun ClientsScreen(
                 OutlinedTextField(
                     value = state.editPhone,
                     onValueChange = viewModel::onEditPhoneChange,
-                    label = { Text("Teléfono") },
+                    label = { Text(stringResource(R.string.label_phone)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     enabled = selectedClient != null && !state.isBusy
@@ -222,12 +232,12 @@ fun ClientsScreen(
                     enabled = selectedClient != null && !state.isBusy,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Guardar cambios")
+                    Text(stringResource(R.string.action_save_changes))
                 }
                 MoneyAmountField(
                     value = state.addDebtInput,
                     onValueChange = viewModel::onAddDebtInputChange,
-                    label = "Agregar deuda",
+                    label = stringResource(R.string.clients_add_debt),
                     enabled = selectedClient != null && !state.isBusy
                 )
                 FilledTonalButton(
@@ -235,7 +245,13 @@ fun ClientsScreen(
                     enabled = selectedClient != null && !state.isBusy,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(if (state.isBusy) "Procesando…" else "Agregar deuda")
+                    Text(
+                        if (state.isBusy) {
+                            stringResource(R.string.action_processing)
+                        } else {
+                            stringResource(R.string.clients_add_debt)
+                        }
+                    )
                 }
                 OutlinedButton(
                     onClick = { showDeleteConfirm = true },
@@ -243,7 +259,7 @@ fun ClientsScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        "Eliminar cliente",
+                        stringResource(R.string.clients_delete_button),
                         color = if (selectedClient != null) {
                             MaterialTheme.colorScheme.error
                         } else {
@@ -259,7 +275,7 @@ fun ClientsScreen(
             item {
                 SoftPanel {
                     Text(
-                        "Aún no hay clientes. Crea uno o impórtalo desde contactos.",
+                        stringResource(R.string.clients_empty),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -304,7 +320,11 @@ fun ClientsScreen(
                         }
                     )
                     Text(
-                        text = if (hasDebt) "PENDIENTE" else "AL CORRIENTE",
+                        text = if (hasDebt) {
+                            stringResource(R.string.clients_status_pending)
+                        } else {
+                            stringResource(R.string.clients_status_current)
+                        },
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = if (hasDebt) {
@@ -317,7 +337,7 @@ fun ClientsScreen(
                 if (client.phone.isNotBlank()) {
                     Text(client.phone, style = MaterialTheme.typography.bodySmall)
                 }
-                Text("Deuda: ${Money.format(client.totalDebt)}")
+                Text(stringResource(R.string.clients_debt, Money.format(client.totalDebt)))
             }
         }
     }
