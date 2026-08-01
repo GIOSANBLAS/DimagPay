@@ -1,5 +1,9 @@
 package com.paycontrol.app.ui.screens.settings
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,10 +15,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.Assessment
+import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.HistoryEdu
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Policy
 import androidx.compose.material.icons.outlined.Verified
 import androidx.compose.material3.MaterialTheme
@@ -22,17 +28,18 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.paycontrol.app.R
 import com.paycontrol.app.domain.model.AppInfo
 import com.paycontrol.app.ui.components.SectionTitle
 import com.paycontrol.app.ui.components.SettingsRow
+import com.paycontrol.app.ui.components.SettingsToggleRow
 import com.paycontrol.app.ui.components.SoftPanel
 import com.paycontrol.app.ui.navigation.AppDestination
 
@@ -41,13 +48,21 @@ fun SettingsScreen(
     viewModel: SettingsViewModel,
     onNavigate: (AppDestination) -> Unit
 ) {
-    val displayName by viewModel.displayName.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val pinEnabled by viewModel.pinEnabled.collectAsStateWithLifecycle()
-    var nameDraft by remember(displayName) { mutableStateOf(displayName) }
-    var savedHint by remember { mutableStateOf<String?>(null) }
+    val debtRemindersEnabled by viewModel.debtRemindersEnabled.collectAsStateWithLifecycle()
+    val ui by viewModel.ui.collectAsStateWithLifecycle()
+    val permissionDeniedMessage = stringResource(R.string.settings_debt_reminders_permission_denied)
 
-    LaunchedEffect(displayName) {
-        nameDraft = displayName
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            viewModel.clearPermissionHint()
+            viewModel.setDebtRemindersEnabled(true)
+        } else {
+            viewModel.setPermissionHint(permissionDeniedMessage)
+        }
     }
 
     Column(
@@ -59,41 +74,72 @@ fun SettingsScreen(
     ) {
         SectionTitle(
             title = "Ajustes",
-            subtitle = "Preferencias, ayuda y información formal de PayControl."
+            subtitle = "Preferencias, ayuda y información formal de DimagPay."
         )
 
         SoftPanel {
             Text("Cómo te llamamos", style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(
-                value = nameDraft,
-                onValueChange = { nameDraft = it.take(40) },
+                value = ui.nameDraft,
+                onValueChange = viewModel::onNameDraftChange,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp),
                 singleLine = true,
                 label = { Text("Nombre o apodo") }
             )
-            TextButton(
-                onClick = {
-                    savedHint = if (viewModel.saveDisplayName(nameDraft)) {
-                        "Nombre actualizado"
-                    } else {
-                        "Escribe al menos 2 caracteres"
-                    }
-                }
-            ) {
+            TextButton(onClick = viewModel::saveDisplayName) {
                 Text("Guardar")
             }
-            savedHint?.let {
+            ui.savedHint?.let { hint ->
                 Text(
-                    it,
-                    color = if (it.startsWith("Escribe")) {
+                    hint,
+                    color = if (ui.savedHintIsError) {
                         MaterialTheme.colorScheme.error
                     } else {
                         MaterialTheme.colorScheme.primary
                     }
                 )
             }
+        }
+
+        SettingsToggleRow(
+            icon = Icons.Outlined.Notifications,
+            title = stringResource(R.string.settings_debt_reminders_title),
+            subtitle = if (debtRemindersEnabled) {
+                stringResource(R.string.settings_debt_reminders_subtitle_on)
+            } else {
+                stringResource(R.string.settings_debt_reminders_subtitle_off)
+            },
+            checked = debtRemindersEnabled,
+            onCheckedChange = { enabled ->
+                viewModel.clearPermissionHint()
+                if (!enabled) {
+                    viewModel.setDebtRemindersEnabled(false)
+                    return@SettingsToggleRow
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    val granted = ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.POST_NOTIFICATIONS
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    if (granted) {
+                        viewModel.setDebtRemindersEnabled(true)
+                    } else {
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                } else {
+                    viewModel.setDebtRemindersEnabled(true)
+                }
+            }
+        )
+        ui.permissionHint?.let { hint ->
+            Text(
+                hint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
         }
 
         SettingsRow(
@@ -107,6 +153,12 @@ fun SettingsScreen(
             title = "Reportes",
             subtitle = "Filtros, totales e exportación CSV",
             onClick = { onNavigate(AppDestination.Reports) }
+        )
+        SettingsRow(
+            icon = Icons.Outlined.CloudUpload,
+            title = "Respaldo",
+            subtitle = "Exportar y restaurar JSON de DimagPay",
+            onClick = { onNavigate(AppDestination.Backup) }
         )
         SettingsRow(
             icon = Icons.Outlined.Lock,
@@ -139,7 +191,7 @@ fun SettingsScreen(
         SettingsRow(
             icon = Icons.Outlined.Groups,
             title = "Nuestro equipo",
-            subtitle = "Quiénes construyen PayControl",
+            subtitle = "Quiénes construyen DimagPay",
             onClick = { onNavigate(AppDestination.Team) }
         )
         SettingsRow(

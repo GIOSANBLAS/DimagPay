@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.paycontrol.app.security.AppLockGate
 
 @Composable
 fun LockScreen(viewModel: AppLockViewModel) {
@@ -46,7 +47,7 @@ fun LockScreen(viewModel: AppLockViewModel) {
 
     val biometricsAvailable = remember(context) {
         BiometricManager.from(context).canAuthenticate(
-            BiometricManager.Authenticators.BIOMETRIC_WEAK
+            BiometricManager.Authenticators.BIOMETRIC_STRONG
         ) == BiometricManager.BIOMETRIC_SUCCESS
     }
 
@@ -70,7 +71,7 @@ fun LockScreen(viewModel: AppLockViewModel) {
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             Text(
-                text = "PayControl bloqueado",
+                text = "DimagPay bloqueado",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center
@@ -121,6 +122,7 @@ fun LockScreen(viewModel: AppLockViewModel) {
             if (biometricsAvailable && activity != null) {
                 OutlinedButton(
                     onClick = {
+                        AppLockGate.suppressFor(60_000L)
                         launchBiometricPrompt(
                             activity = activity,
                             onSuccess = viewModel::unlockWithBiometrics,
@@ -168,10 +170,10 @@ private fun launchBiometricPrompt(
         }
     )
     val info = BiometricPrompt.PromptInfo.Builder()
-        .setTitle("Desbloquear PayControl")
+        .setTitle("Desbloquear DimagPay")
         .setSubtitle("Usa tu huella o rostro como alternativa al PIN")
         .setNegativeButtonText("Usar PIN")
-        .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK)
+        .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
         .build()
     prompt.authenticate(info)
 }

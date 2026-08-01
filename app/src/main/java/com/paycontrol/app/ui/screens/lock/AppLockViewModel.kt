@@ -3,6 +3,8 @@ package com.paycontrol.app.ui.screens.lock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.paycontrol.app.data.preferences.UserPreferencesRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +22,8 @@ data class LockUiState(
 /**
  * Estado de desbloqueo de sesión en memoria (se reinicia al matar el proceso).
  */
-class AppLockViewModel(
+@HiltViewModel
+class AppLockViewModel @Inject constructor(
     private val preferences: UserPreferencesRepository
 ) : ViewModel() {
 
@@ -71,5 +74,13 @@ class AppLockViewModel(
     fun unlockWithBiometrics() {
         _sessionUnlocked.value = true
         _lockUi.value = LockUiState()
+    }
+
+    /** Vuelve a pedir PIN al salir a segundo plano. */
+    fun lockSession() {
+        if (pinEnabled.value) {
+            _sessionUnlocked.value = false
+            _lockUi.value = LockUiState()
+        }
     }
 }

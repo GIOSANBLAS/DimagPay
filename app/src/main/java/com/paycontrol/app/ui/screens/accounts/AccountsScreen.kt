@@ -3,6 +3,7 @@ package com.paycontrol.app.ui.screens.accounts
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,22 +14,20 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +41,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.paycontrol.app.data.local.entity.AccountEntity
 import com.paycontrol.app.domain.model.AccountType
 import com.paycontrol.app.domain.util.Money
+import com.paycontrol.app.ui.components.AccountPickerField
 import com.paycontrol.app.ui.components.MoneyAmountField
 import com.paycontrol.app.ui.components.SectionTitle
 import com.paycontrol.app.ui.components.SoftPanel
@@ -136,6 +136,50 @@ fun AccountsScreen(
                     if (selected == null) {
                         StatusMessage(state.errorMessage, state.successMessage)
                     }
+                }
+            }
+
+            item(key = "transfer") {
+                SoftPanel {
+                    Text("Transferir entre cuentas", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Mueve saldo de una cuenta a otra sin afectar ingresos ni gastos.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    AccountPickerField(
+                        accounts = accounts,
+                        selectedAccountId = state.transferFromAccountId,
+                        onAccountSelected = viewModel::onTransferFromAccountSelected,
+                        label = "Cuenta origen"
+                    )
+                    AccountPickerField(
+                        accounts = accounts,
+                        selectedAccountId = state.transferToAccountId,
+                        onAccountSelected = viewModel::onTransferToAccountSelected,
+                        label = "Cuenta destino"
+                    )
+                    MoneyAmountField(
+                        value = state.transferAmountInput,
+                        onValueChange = viewModel::onTransferAmountChange,
+                        label = "Monto",
+                        placeholder = "0.00"
+                    )
+                    val canTransfer = accounts.size >= 2 && !state.isSaving
+                    Button(
+                        onClick = viewModel::transferBetweenAccounts,
+                        enabled = canTransfer,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            when {
+                                state.isSaving -> "Transferiendo…"
+                                accounts.size < 2 -> "Necesitas al menos 2 cuentas"
+                                else -> "Transferir"
+                            }
+                        )
+                    }
+                    StatusMessage(state.errorMessage, state.successMessage)
                 }
             }
 
@@ -266,43 +310,72 @@ private fun AccountListItem(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AccountTypeDropdown(
     selectedType: String,
     onTypeSelected: (String) -> Unit,
     label: String
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it }
-    ) {
+    var showPicker by remember { mutableStateOf(false) }
+
+    Box(modifier = Modifier.fillMaxWidth()) {
         OutlinedTextField(
             value = selectedType,
             onValueChange = {},
             readOnly = true,
+            enabled = false,
             label = { Text(label) },
             trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                Icon(Icons.Outlined.ArrowDropDown, contentDescription = null)
             },
-            modifier = Modifier
-                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                .fillMaxWidth()
+            colors = OutlinedTextFieldDefaults.colors(
+                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                disabledBorderColor = MaterialTheme.colorScheme.outline,
+                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                disabledContainerColor = MaterialTheme.colorScheme.surface
+            ),
+            modifier = Modifier.fillMaxWidth()
         )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            AccountType.all.forEach { type ->
-                DropdownMenuItem(
-                    text = { Text(type) },
-                    onClick = {
-                        onTypeSelected(type)
-                        expanded = false
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clickable { showPicker = true }
+        )
+    }
+
+    if (showPicker) {
+        AlertDialog(
+            onDismissRequest = { showPicker = false },
+            title = { Text(label) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    AccountType.all.forEach { type ->
+                        val isSelected = type == selectedType
+                        Text(
+                            text = type,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (isSelected) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onTypeSelected(type)
+                                    showPicker = false
+                                }
+                                .padding(vertical = 12.dp)
+                        )
                     }
-                )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showPicker = false }) {
+                    Text("Cerrar")
+                }
             }
-        }
+        )
     }
 }

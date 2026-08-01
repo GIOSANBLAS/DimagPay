@@ -1,7 +1,11 @@
 package com.paycontrol.app.data.repository
 
+import androidx.room.withTransaction
+import com.paycontrol.app.data.local.AppDatabase
 import com.paycontrol.app.data.local.dao.SupplierDao
+import com.paycontrol.app.data.local.dao.TransactionDao
 import com.paycontrol.app.data.local.entity.SupplierEntity
+import com.paycontrol.app.domain.util.AppLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -9,13 +13,21 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 
 class SupplierRepository(
-    private val supplierDao: SupplierDao
+    private val database: AppDatabase,
+    private val supplierDao: SupplierDao = database.supplierDao(),
+    private val transactionDao: TransactionDao = database.transactionDao()
 ) {
 
     fun observeSuppliers(): Flow<List<SupplierEntity>> =
         supplierDao.observeAll()
-            .catch { emit(emptyList()) }
+            .catch { e ->
+                AppLog.e(TAG, "Error observing suppliers", e)
+                emit(emptyList())
+            }
             .flowOn(Dispatchers.IO)
+
+    fun pagingSource(): androidx.paging.PagingSource<Int, SupplierEntity> =
+        supplierDao.pagingSource()
 
     suspend fun createSupplier(name: String, phone: String = ""): Long =
         withContext(Dispatchers.IO) {
@@ -46,12 +58,22 @@ class SupplierRepository(
         }
 
     suspend fun delete(supplier: SupplierEntity) = withContext(Dispatchers.IO) {
-        supplierDao.delete(supplier)
+        database.withTransaction {
+            transactionDao.clearRelatedSupplier(supplier.id)
+            supplierDao.delete(supplier)
+        }
     }
 
     suspend fun deleteById(supplierId: Long) = withContext(Dispatchers.IO) {
-        val supplier = supplierDao.getById(supplierId)
-            ?: error("Proveedor no encontrado")
-        supplierDao.delete(supplier)
+        database.withTransaction {
+            val supplier = supplierDao.getById(supplierId)
+                ?: error("Proveedor no encontrado")
+            transactionDao.clearRelatedSupplier(supplierId)
+            supplierDao.delete(supplier)
+        }
+    }
+
+    companion object {
+        private const val TAG = "SupplierRepo"
     }
 }

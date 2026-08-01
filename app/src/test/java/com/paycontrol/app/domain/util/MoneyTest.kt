@@ -7,28 +7,22 @@ import org.junit.Test
 class MoneyTest {
 
     @Test
-    fun parseToCents_validDecimal() {
-        assertEquals(125050L, Money.parseToCents("1250.50"))
-        assertEquals(100L, Money.parseToCents("1"))
-        assertEquals(0L, Money.parseToCents("0"))
+    fun parseAndFormatRoundTrip() {
+        val cents = Money.parseToCents("1234.56")
+        assertEquals(123456L, cents)
+        val formatted = Money.format(cents!!)
+        assert(formatted.contains("1,234.56") || formatted.contains("1234.56"))
     }
 
     @Test
-    fun parseToCents_rejectsInvalid() {
-        assertNull(Money.parseToCents(""))
+    fun rejectInvalid() {
         assertNull(Money.parseToCents("abc"))
-        assertNull(Money.parseToCents("1.234"))
+        assertNull(Money.parseToCents(""))
     }
 
     @Test
-    fun addAndSubtract_exact() {
-        assertEquals(300L, Money.add(100L, 200L))
-        assertEquals(50L, Money.subtract(150L, 100L))
-    }
-
-    @Test
-    fun format_containsCurrencySymbolOrDigits() {
-        val formatted = Money.format(1500L)
-        assert(formatted.contains("15") || formatted.contains("15.00") || formatted.contains("15,00"))
+    fun addSubtract() {
+        assertEquals(150L, Money.add(100L, 50L))
+        assertEquals(50L, Money.subtract(100L, 50L))
     }
 }

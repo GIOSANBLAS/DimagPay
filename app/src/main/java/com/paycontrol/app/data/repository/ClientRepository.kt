@@ -1,7 +1,11 @@
 package com.paycontrol.app.data.repository
 
+import androidx.room.withTransaction
+import com.paycontrol.app.data.local.AppDatabase
 import com.paycontrol.app.data.local.dao.ClientDao
+import com.paycontrol.app.data.local.dao.TransactionDao
 import com.paycontrol.app.data.local.entity.ClientEntity
+import com.paycontrol.app.domain.util.AppLog
 import com.paycontrol.app.domain.util.Money
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -10,22 +14,36 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 
 class ClientRepository(
-    private val clientDao: ClientDao
+    private val database: AppDatabase,
+    private val clientDao: ClientDao = database.clientDao(),
+    private val transactionDao: TransactionDao = database.transactionDao()
 ) {
 
     fun observeClients(): Flow<List<ClientEntity>> =
         clientDao.observeAll()
-            .catch { emit(emptyList()) }
+            .catch { e ->
+                AppLog.e(TAG, "Error observing clients", e)
+                emit(emptyList())
+            }
             .flowOn(Dispatchers.IO)
 
     fun observeClientsWithDebt(): Flow<List<ClientEntity>> =
         clientDao.observeWithDebt()
-            .catch { emit(emptyList()) }
+            .catch { e ->
+                AppLog.e(TAG, "Error observing clients with debt", e)
+                emit(emptyList())
+            }
             .flowOn(Dispatchers.IO)
+
+    fun pagingSource(): androidx.paging.PagingSource<Int, ClientEntity> =
+        clientDao.pagingSource()
 
     fun observeTotalReceivables(): Flow<Long> =
         clientDao.observeTotalReceivables()
-            .catch { emit(0L) }
+            .catch { e ->
+                AppLog.e(TAG, "Error observing total receivables", e)
+                emit(0L)
+            }
             .flowOn(Dispatchers.IO)
 
     suspend fun createClient(
@@ -69,12 +87,22 @@ class ClientRepository(
         }
 
     suspend fun delete(client: ClientEntity) = withContext(Dispatchers.IO) {
-        clientDao.delete(client)
+        database.withTransaction {
+            transactionDao.clearRelatedClient(client.id)
+            clientDao.delete(client)
+        }
     }
 
     suspend fun deleteById(clientId: Long) = withContext(Dispatchers.IO) {
-        val client = clientDao.getById(clientId)
-            ?: error("Cliente no encontrado")
-        clientDao.delete(client)
+        database.withTransaction {
+            val client = clientDao.getById(clientId)
+                ?: error("Cliente no encontrado")
+            transactionDao.clearRelatedClient(clientId)
+            clientDao.delete(client)
+        }
+    }
+
+    companion object {
+        private const val TAG = "ClientRepo"
     }
 }

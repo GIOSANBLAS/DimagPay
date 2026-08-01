@@ -6,6 +6,8 @@ import com.paycontrol.app.data.local.entity.TransactionEntity
 import com.paycontrol.app.data.preferences.UserPreferencesRepository
 import com.paycontrol.app.data.repository.ClientRepository
 import com.paycontrol.app.data.repository.FinanceRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -21,7 +23,8 @@ data class DashboardUiState(
     val recentTransactions: List<TransactionEntity> = emptyList()
 )
 
-class DashboardViewModel(
+@HiltViewModel
+class DashboardViewModel @Inject constructor(
     financeRepository: FinanceRepository,
     clientRepository: ClientRepository,
     preferences: UserPreferencesRepository
@@ -30,11 +33,16 @@ class DashboardViewModel(
     private val totals = combine(
         financeRepository.observeTotalIncome(),
         financeRepository.observeTotalExpense(),
-        financeRepository.observeConsolidatedBalance(),
         financeRepository.observeAccountsBalance(),
         clientRepository.observeTotalReceivables()
-    ) { income, expense, consolidated, accountsBalance, receivables ->
-        TotalsSnapshot(income, expense, consolidated, accountsBalance, receivables)
+    ) { income, expense, accountsBalance, receivables ->
+        TotalsSnapshot(
+            income = income,
+            expense = expense,
+            consolidated = accountsBalance,
+            accountsBalance = accountsBalance,
+            receivables = receivables
+        )
     }
 
     val uiState: StateFlow<DashboardUiState> = combine(

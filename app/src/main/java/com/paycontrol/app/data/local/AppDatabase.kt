@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.paycontrol.app.data.local.dao.AccountDao
 import com.paycontrol.app.data.local.dao.ClientDao
 import com.paycontrol.app.data.local.dao.LedgerDao
@@ -16,15 +18,6 @@ import com.paycontrol.app.data.local.entity.TransactionEntity
 import com.paycontrol.app.data.security.SecureStore
 import net.sqlcipher.database.SupportFactory
 
-/**
- * Room database (SQLCipher).
- *
- * exportSchema = false for now. When enabling schema export for CI migration checks,
- * set exportSchema = true and configure room.schemaLocation in Gradle.
- *
- * Prefer explicit [androidx.room.migration.Migration] objects over destructive fallbacks.
- * Keep version = 1 unless the schema actually changes; then bump version and add a Migration.
- */
 @Database(
     entities = [
         AccountEntity::class,
@@ -32,7 +25,7 @@ import net.sqlcipher.database.SupportFactory
         SupplierEntity::class,
         ClientEntity::class
     ],
-    version = 1,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -46,15 +39,43 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         const val NAME = "paycontrol_secure.db"
 
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE transactions ADD COLUMN transferGroupId INTEGER")
+                db.execSQL("ALTER TABLE transactions ADD COLUMN transferIsOutbound INTEGER")
+                db.execSQL("ALTER TABLE transactions ADD COLUMN relatedClientId INTEGER")
+                db.execSQL("ALTER TABLE transactions ADD COLUMN relatedSupplierId INTEGER")
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_transactions_transferGroupId " +
+                        "ON transactions(transferGroupId)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_transactions_relatedClientId " +
+                        "ON transactions(relatedClientId)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_transactions_relatedSupplierId " +
+                        "ON transactions(relatedSupplierId)"
+                )
+            }
+        }
+
+        /** Índices compuestos para filtros de reportes + fechas UTC documentadas. */
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_transactions_date_account_type " +
+                        "ON transactions(date, accountId, type)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_transactions_date_type " +
+                        "ON transactions(date, type)"
+                )
+            }
+        }
+
         @Volatile
         private var instance: AppDatabase? = null
-
-        // Placeholder for future migrations (example):
-        // private val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
-        //     override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-        //         // db.execSQL("ALTER TABLE ...")
-        //     }
-        // }
 
         fun getInstance(context: Context): AppDatabase {
             return instance ?: synchronized(this) {
@@ -63,16 +84,19 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         private fun build(context: Context): AppDatabase {
-            // One-time cleanup of the old plaintext database from early builds.
-            context.deleteDatabase("paycontrol.db")
+            // Legacy plaintext DB (pre-SQLCipher). Solo se borra si no hay DB segura aún
+            // para no destruir datos en cada arranque si el usuario aún no migró.
+            val secureExists = context.getDatabasePath(NAME).exists()
+            if (!secureExists) {
+                context.deleteDatabase("paycontrol.db")
+            }
 
             val passphrase = SecureStore.databasePassphrase(context)
             val factory = SupportFactory(passphrase)
 
             return Room.databaseBuilder(context, AppDatabase::class.java, NAME)
                 .openHelperFactory(factory)
-                // No destructive wipe: schema changes must ship with explicit Migration objects.
-                // .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
         }
     }

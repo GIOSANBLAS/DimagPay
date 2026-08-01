@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.paycontrol.app.PayControlApp
 import com.paycontrol.app.ui.screens.accounts.AccountsViewModel
+import com.paycontrol.app.ui.screens.backup.BackupViewModel
 import com.paycontrol.app.ui.screens.clients.ClientsViewModel
 import com.paycontrol.app.ui.screens.dashboard.DashboardViewModel
 import com.paycontrol.app.ui.screens.lock.AppLockViewModel
@@ -44,10 +45,13 @@ class AppViewModelFactory(
                 AccountsViewModel(app.financeRepository) as T
 
             modelClass.isAssignableFrom(SettingsViewModel::class.java) ->
-                SettingsViewModel(app.userPreferences) as T
+                SettingsViewModel(app, app.userPreferences) as T
 
             modelClass.isAssignableFrom(ReportsViewModel::class.java) ->
                 ReportsViewModel(app, app.financeRepository) as T
+
+            modelClass.isAssignableFrom(BackupViewModel::class.java) ->
+                BackupViewModel(app, app.backupManager) as T
 
             modelClass.isAssignableFrom(AppLockViewModel::class.java) ->
                 AppLockViewModel(app.userPreferences) as T

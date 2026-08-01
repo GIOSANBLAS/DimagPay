@@ -29,7 +29,7 @@ object SecureStore {
             return existing.toByteArray(Charsets.UTF_8)
         }
         val fresh = UUID.randomUUID().toString() + UUID.randomUUID().toString()
-        prefs.edit().putString(KEY_DB_PASS, fresh).apply()
+        prefs.edit().putString(KEY_DB_PASS, fresh).commit()
         return fresh.toByteArray(Charsets.UTF_8)
     }
 

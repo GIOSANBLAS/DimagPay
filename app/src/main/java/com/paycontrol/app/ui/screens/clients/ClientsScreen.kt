@@ -8,7 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Contacts
@@ -46,6 +47,7 @@ fun ClientsScreen(
     contactsRepository: ContactsRepository
 ) {
     val clients by viewModel.clients.collectAsStateWithLifecycle()
+    val pagingItems = viewModel.pagedClients.collectAsLazyPagingItems()
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     val receivables by viewModel.totalReceivables.collectAsStateWithLifecycle()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -265,10 +267,11 @@ fun ClientsScreen(
         }
 
         items(
-            items = clients,
-            key = { it.id },
+            count = pagingItems.itemCount,
+            key = pagingItems.itemKey { it.id },
             contentType = { "client" }
-        ) { client ->
+        ) { index ->
+            val client = pagingItems[index] ?: return@items
             val selected = state.selectedClientId == client.id
             val hasDebt = client.totalDebt > 0L
             SoftPanel(

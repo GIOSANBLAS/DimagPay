@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.PayControl" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.PayControl" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/brand_pearl</item>
+        <item name="android:windowBackground">@color/brand_mist</item>
+        <item name="android:colorPrimary">@color/brand_sapphire</item>
+    </style>
 </resources>

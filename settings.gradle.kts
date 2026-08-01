@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "PayControl"
+rootProject.name = "DimagPay"
 include(":app")

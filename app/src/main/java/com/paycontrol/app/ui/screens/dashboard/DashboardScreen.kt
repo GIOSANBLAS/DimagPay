@@ -1,5 +1,10 @@
 package com.paycontrol.app.ui.screens.dashboard
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,22 +30,25 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.paycontrol.app.data.local.entity.TransactionEntity
 import com.paycontrol.app.domain.model.TransactionType
+import com.paycontrol.app.domain.util.DateTimeUtils
 import com.paycontrol.app.domain.util.Money
+import com.paycontrol.app.ui.components.BrandWordmark
+import com.paycontrol.app.ui.components.HeroPanel
 import com.paycontrol.app.ui.components.SoftPanel
 import com.paycontrol.app.ui.navigation.AppDestination
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun DashboardScreen(
@@ -49,7 +57,7 @@ fun DashboardScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val greeting = remember(state.displayName) {
-        if (state.displayName.isBlank()) "Hola" else "Hola, ${state.displayName}"
+        if (state.displayName.isBlank()) "Tu resumen" else "Hola, ${state.displayName}"
     }
     val balanceFormatted = remember(state.consolidatedBalanceCents) {
         Money.format(state.consolidatedBalanceCents)
@@ -66,11 +74,16 @@ fun DashboardScreen(
     val receivablesFormatted = remember(state.receivablesCents) {
         Money.format(state.receivablesCents)
     }
+    val appear = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        appear.animateTo(1f, tween(520, easing = FastOutSlowInEasing))
+    }
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = 20.dp, vertical = 12.dp)
+            .alpha(appear.value),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item(key = "header") {
@@ -79,10 +92,10 @@ fun DashboardScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(greeting, style = MaterialTheme.typography.headlineMedium)
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    BrandWordmark()
                     Text(
-                        "Resumen financiero",
+                        greeting,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -201,34 +214,35 @@ private fun BalanceSummaryCard(
     income: String,
     expense: String
 ) {
-    SoftPanel {
+    HeroPanel {
         Text(
-            "Balance consolidado",
+            "Saldo en cuentas",
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = Color.White.copy(alpha = 0.78f)
         )
         Text(
             text = balance,
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.SemiBold
+            style = MaterialTheme.typography.displayMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.White
         )
-        Spacer(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-            Metric("Ingresos", income)
-            Metric("Gastos", expense)
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
+            Metric("Ingresos", income, Color.White)
+            Metric("Gastos", expense, Color.White.copy(alpha = 0.92f))
         }
     }
 }
 
 @Composable
-private fun Metric(label: String, value: String) {
+private fun Metric(label: String, value: String, color: Color) {
     Column {
         Text(
             label,
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = color.copy(alpha = 0.75f)
         )
-        Text(value, fontWeight = FontWeight.Medium)
+        Text(value, fontWeight = FontWeight.SemiBold, color = color)
     }
 }
 
@@ -239,9 +253,12 @@ private fun Shortcut(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    val shape = RoundedCornerShape(16.dp)
     Surface(
-        modifier = modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(18.dp),
+        modifier = modifier
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)
+            .clickable(onClick = onClick),
+        shape = shape,
         color = MaterialTheme.colorScheme.surface
     ) {
         Column(
@@ -257,15 +274,17 @@ private fun Shortcut(
 
 @Composable
 private fun TransactionRow(tx: TransactionEntity) {
+    val isTransfer = tx.type == TransactionType.TRANSFER
     val isIncome = tx.type == TransactionType.INCOME
     val dateLabel = remember(tx.date) {
-        SimpleDateFormat(
-            "dd MMM yyyy",
-            Locale.Builder().setLanguage("es").setRegion("MX").build()
-        ).format(Date(tx.date))
+        DateTimeUtils.formatDisplay(tx.date)
     }
-    val amountLabel = remember(tx.amount, isIncome) {
-        (if (isIncome) "+" else "−") + Money.format(tx.amount)
+    val amountLabel = remember(tx.amount, isIncome, isTransfer) {
+        when {
+            isTransfer -> "↔ ${Money.format(tx.amount)}"
+            isIncome -> "+${Money.format(tx.amount)}"
+            else -> "−${Money.format(tx.amount)}"
+        }
     }
     SoftPanel {
         Row(
@@ -283,10 +302,10 @@ private fun TransactionRow(tx: TransactionEntity) {
             }
             Text(
                 text = amountLabel,
-                color = if (isIncome) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.error
+                color = when {
+                    isTransfer -> MaterialTheme.colorScheme.onSurfaceVariant
+                    isIncome -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.error
                 },
                 fontWeight = FontWeight.SemiBold
             )

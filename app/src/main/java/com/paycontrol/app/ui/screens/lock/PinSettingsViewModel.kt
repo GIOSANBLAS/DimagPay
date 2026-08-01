@@ -3,6 +3,9 @@ package com.paycontrol.app.ui.screens.lock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.paycontrol.app.data.preferences.UserPreferencesRepository
+import com.paycontrol.app.domain.util.AppLog
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +24,8 @@ data class PinSettingsUiState(
     val isBusy: Boolean = false
 )
 
-class PinSettingsViewModel(
+@HiltViewModel
+class PinSettingsViewModel @Inject constructor(
     private val preferences: UserPreferencesRepository
 ) : ViewModel() {
 
@@ -63,7 +67,8 @@ class PinSettingsViewModel(
                         messageIsError = false
                     )
                 }
-                .onFailure {
+                .onFailure { error ->
+                    AppLog.e(TAG, "Error al activar PIN", error)
                     showError("No se pudo activar el PIN")
                 }
         }
@@ -84,6 +89,8 @@ class PinSettingsViewModel(
             _ui.update { it.copy(isBusy = true, message = null) }
             val ok = runCatching {
                 preferences.changePin(state.currentPin, state.newPin)
+            }.onFailure { error ->
+                AppLog.e(TAG, "Error al cambiar PIN", error)
             }.getOrDefault(false)
             if (ok) {
                 _ui.value = PinSettingsUiState(
@@ -104,7 +111,11 @@ class PinSettingsViewModel(
         }
         viewModelScope.launch {
             _ui.update { it.copy(isBusy = true, message = null) }
-            val ok = runCatching { preferences.disablePin(pin) }.getOrDefault(false)
+            val ok = runCatching { preferences.disablePin(pin) }
+                .onFailure { error ->
+                    AppLog.e(TAG, "Error al desactivar PIN", error)
+                }
+                .getOrDefault(false)
             if (ok) {
                 _ui.value = PinSettingsUiState(
                     message = "Bloqueo por PIN desactivado",
@@ -134,4 +145,8 @@ class PinSettingsViewModel(
 
     private fun digitsOnly(value: String): String =
         value.filter { it.isDigit() }.take(UserPreferencesRepository.PIN_MAX_LENGTH)
+
+    companion object {
+        private const val TAG = "PinSettingsVM"
+    }
 }

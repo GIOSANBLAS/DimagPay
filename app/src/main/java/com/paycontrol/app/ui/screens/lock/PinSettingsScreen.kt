@@ -64,7 +64,7 @@ fun PinSettingsScreen(
                 subtitle = if (pinEnabled) {
                     "El bloqueo está activo. Puedes cambiar o desactivar el PIN."
                 } else {
-                    "Protege PayControl con un PIN de 4 a 8 dígitos. Se guarda cifrado en el dispositivo."
+                    "Protege DimagPay con un PIN de 4 a 8 dígitos. Se guarda cifrado en el dispositivo."
                 }
             )
 

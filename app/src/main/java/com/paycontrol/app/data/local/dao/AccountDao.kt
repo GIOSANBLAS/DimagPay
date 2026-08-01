@@ -27,12 +27,21 @@ interface AccountDao {
     @Query("SELECT COALESCE(SUM(balance), 0) FROM accounts")
     fun observeTotalBalance(): Flow<Long>
 
+    @Query("SELECT COALESCE(SUM(balance), 0) FROM accounts")
+    suspend fun getTotalBalance(): Long
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(account: AccountEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertAll(accounts: List<AccountEntity>)
 
     @Update
     suspend fun update(account: AccountEntity)
 
     @Delete
     suspend fun delete(account: AccountEntity)
+
+    @Query("DELETE FROM accounts")
+    suspend fun deleteAll()
 }

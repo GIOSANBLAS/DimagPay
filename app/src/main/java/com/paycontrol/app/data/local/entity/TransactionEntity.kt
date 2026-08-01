@@ -6,10 +6,11 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
- * Movimiento de ingreso o gasto asociado a una [AccountEntity].
+ * Movimiento asociado a una [AccountEntity].
  *
- * [amount] siempre es positivo en centavos; el sentido lo define [type]
- * (`INGRESO` / `GASTO`).
+ * [amount] siempre positivo en centavos; el sentido lo define [type].
+ * Transferencias: dos filas con el mismo [transferGroupId];
+ * [transferIsOutbound] = true en la cuenta de origen.
  */
 @Entity(
     tableName = "transactions",
@@ -25,7 +26,13 @@ import androidx.room.PrimaryKey
         Index(value = ["accountId"]),
         Index(value = ["date"]),
         Index(value = ["type"]),
-        Index(value = ["category"])
+        Index(value = ["category"]),
+        Index(value = ["transferGroupId"]),
+        Index(value = ["relatedClientId"]),
+        Index(value = ["relatedSupplierId"]),
+        // date es epoch millis UTC (Instant); UI formatea en zona local.
+        Index(value = ["date", "accountId", "type"]),
+        Index(value = ["date", "type"])
     ]
 )
 data class TransactionEntity(
@@ -35,6 +42,11 @@ data class TransactionEntity(
     val amount: Long,
     val type: String,
     val category: String,
+    /** Epoch millis UTC ([java.time.Instant]). */
     val date: Long,
-    val note: String = ""
+    val note: String = "",
+    val transferGroupId: Long? = null,
+    val transferIsOutbound: Boolean? = null,
+    val relatedClientId: Long? = null,
+    val relatedSupplierId: Long? = null
 )

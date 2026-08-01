@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.paycontrol.app.data.preferences.UserPreferencesRepository
 import com.paycontrol.app.data.repository.FinanceRepository
+import com.paycontrol.app.domain.util.AppLog
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +23,8 @@ data class WelcomeUiState(
     val error: String? = null
 )
 
-class OnboardingViewModel(
+@HiltViewModel
+class OnboardingViewModel @Inject constructor(
     private val preferences: UserPreferencesRepository,
     private val financeRepository: FinanceRepository
 ) : ViewModel() {
@@ -65,7 +69,11 @@ class OnboardingViewModel(
                 preferences.completeOnboarding(name)
                 optimisticOnboardingDone.value = true
                 runCatching { financeRepository.ensureDefaultAccount() }
+                    .onFailure { error ->
+                        AppLog.e(TAG, "Error al preparar cuenta por defecto en onboarding", error)
+                    }
             }.onFailure { e ->
+                AppLog.e(TAG, "Error al completar onboarding", e)
                 if (!optimisticOnboardingDone.value) {
                     _welcome.update {
                         it.copy(
@@ -84,9 +92,14 @@ class OnboardingViewModel(
         optimisticGuideSeen.value = true
         viewModelScope.launch {
             runCatching { preferences.markGuideSeen() }
-                .onFailure {
+                .onFailure { error ->
                     // Keep optimistic true so the user is not stuck on the guide.
+                    AppLog.e(TAG, "Error al marcar guía como vista", error)
                 }
         }
+    }
+
+    companion object {
+        private const val TAG = "OnboardingVM"
     }
 }

@@ -2,13 +2,22 @@ package com.paycontrol.app.ui.screens.transactions
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.paycontrol.app.data.local.entity.AccountEntity
 import com.paycontrol.app.data.local.entity.TransactionEntity
 import com.paycontrol.app.data.repository.FinanceRepository
 import com.paycontrol.app.domain.model.DefaultCategories
 import com.paycontrol.app.domain.model.TransactionType
+import com.paycontrol.app.domain.util.AppLog
+import com.paycontrol.app.domain.util.DateTimeUtils
 import com.paycontrol.app.domain.util.Money
 import com.paycontrol.app.domain.util.UiErrorMapper
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +25,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+data class PendingDeleteTx(
+    val id: Long,
+    val type: String,
+    val category: String,
+    val amount: Long
+)
 
 data class TransactionFormState(
     val accountId: Long? = null,
@@ -25,11 +41,13 @@ data class TransactionFormState(
     val note: String = "",
     val isSaving: Boolean = false,
     val deletingId: Long? = null,
+    val pendingDelete: PendingDeleteTx? = null,
     val errorMessage: String? = null,
     val successMessage: String? = null
 )
 
-class TransactionsViewModel(
+@HiltViewModel
+class TransactionsViewModel @Inject constructor(
     private val financeRepository: FinanceRepository
 ) : ViewModel() {
 
@@ -37,9 +55,10 @@ class TransactionsViewModel(
         .observeAccounts()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    val transactions: StateFlow<List<TransactionEntity>> = financeRepository
-        .observeAllTransactions()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val pagedTransactions: Flow<PagingData<TransactionEntity>> = Pager(
+        config = PagingConfig(pageSize = 40, enablePlaceholders = false),
+        pagingSourceFactory = { financeRepository.transactionsPagingSource() }
+    ).flow.cachedIn(viewModelScope)
 
     private val _form = MutableStateFlow(TransactionFormState())
     val form: StateFlow<TransactionFormState> = _form.asStateFlow()
@@ -75,10 +94,24 @@ class TransactionsViewModel(
         _form.update { it.copy(note = note.take(500)) }
     }
 
+    fun requestDelete(tx: TransactionEntity) {
+        _form.update {
+            it.copy(
+                pendingDelete = PendingDeleteTx(tx.id, tx.type, tx.category, tx.amount),
+                errorMessage = null
+            )
+        }
+    }
+
+    fun dismissDeleteConfirm() {
+        _form.update { it.copy(pendingDelete = null) }
+    }
+
     fun ensureDefaultAccount() {
         viewModelScope.launch {
             runCatching { financeRepository.ensureDefaultAccount() }
                 .onFailure { error ->
+                    AppLog.e(TAG, "Error al preparar cuenta por defecto", error)
                     _form.update {
                         it.copy(errorMessage = error.message ?: "No se pudo preparar la cuenta")
                     }
@@ -87,9 +120,11 @@ class TransactionsViewModel(
     }
 
     fun saveTransaction() {
-        val current = _form.value
-        val accountId = current.accountId ?: accounts.value.firstOrNull()?.id
-        val amountCents = Money.parseToCents(current.amountInput)
+        val amountCents = Money.parseToCents(_form.value.amountInput)
+        val accountId = _form.value.accountId ?: accounts.value.firstOrNull()?.id
+        val type = _form.value.type
+        val category = _form.value.category
+        val note = _form.value.note
 
         if (accountId == null) {
             _form.update { it.copy(errorMessage = "Selecciona una cuenta") }
@@ -100,27 +135,37 @@ class TransactionsViewModel(
             return
         }
 
+        var claimed = false
+        _form.update { state ->
+            if (state.isSaving) state
+            else {
+                claimed = true
+                state.copy(isSaving = true, errorMessage = null, successMessage = null)
+            }
+        }
+        if (!claimed) return
+
         viewModelScope.launch {
-            _form.update { it.copy(isSaving = true, errorMessage = null, successMessage = null) }
             runCatching {
                 financeRepository.registerTransaction(
                     accountId = accountId,
                     amountCents = amountCents,
-                    type = current.type,
-                    category = current.category,
-                    date = System.currentTimeMillis(),
-                    note = current.note
+                    type = type,
+                    category = category,
+                    date = DateTimeUtils.nowEpochMillis(),
+                    note = note
                 )
             }.onSuccess {
                 _form.update {
                     TransactionFormState(
                         accountId = accountId,
-                        type = current.type,
-                        category = current.category,
+                        type = type,
+                        category = category,
                         successMessage = "Movimiento registrado"
                     )
                 }
             }.onFailure { error ->
+                AppLog.e(TAG, "Error al guardar movimiento", error)
                 _form.update {
                     it.copy(
                         isSaving = false,
@@ -131,12 +176,24 @@ class TransactionsViewModel(
         }
     }
 
+    fun confirmDeletePending() {
+        val pending = _form.value.pendingDelete ?: return
+        _form.update { it.copy(pendingDelete = null) }
+        deleteTransaction(pending.id)
+    }
+
     fun deleteTransaction(id: Long) {
-        if (_form.value.deletingId != null) return
-        viewModelScope.launch {
-            _form.update {
-                it.copy(deletingId = id, errorMessage = null, successMessage = null)
+        var claimed = false
+        _form.update { state ->
+            if (state.deletingId != null) state
+            else {
+                claimed = true
+                state.copy(deletingId = id, errorMessage = null, successMessage = null)
             }
+        }
+        if (!claimed) return
+
+        viewModelScope.launch {
             runCatching {
                 financeRepository.deleteTransaction(id)
             }.onSuccess {
@@ -148,6 +205,7 @@ class TransactionsViewModel(
                     )
                 }
             }.onFailure { error ->
+                AppLog.e(TAG, "Error al eliminar movimiento id=$id", error)
                 _form.update {
                     it.copy(
                         deletingId = null,
@@ -160,4 +218,8 @@ class TransactionsViewModel(
 
     private fun friendlyError(error: Throwable, fallback: String): String =
         UiErrorMapper.map(error, fallback)
+
+    companion object {
+        private const val TAG = "TransactionsVM"
+    }
 }

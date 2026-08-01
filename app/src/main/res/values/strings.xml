@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">PayControl</string>
-    <string name="welcome_title">Bienvenido a PayControl</string>
+    <string name="app_name">DimagPay</string>
+    <string name="welcome_title">Bienvenido a DimagPay</string>
     <string name="welcome_subtitle">Tu control financiero, claro y privado.</string>
     <string name="how_to_call_you">¿Cómo quieres que te llamemos?</string>
     <string name="display_name_hint">Tu nombre o apodo</string>
@@ -14,10 +14,10 @@
     <string name="licenses">Licencias</string>
     <string name="privacy">Privacidad</string>
     <string name="import_contact">Importar contacto</string>
-    <string name="contacts_permission_rationale">PayControl usa tus contactos (locales y de Google sincronizados) solo para crear clientes o proveedores más rápido. No se suben a ningún servidor.</string>
+    <string name="contacts_permission_rationale">DimagPay usa tus contactos (locales y de Google sincronizados) solo para crear clientes o proveedores más rápido. No se suben a ningún servidor.</string>
     <string name="pin_lock_title">Bloqueo por PIN</string>
     <string name="pin_lock_subtitle">Protege la app con un PIN</string>
-    <string name="pin_locked_title">PayControl bloqueado</string>
+    <string name="pin_locked_title">DimagPay bloqueado</string>
     <string name="pin_enter_hint">Introduce tu PIN para continuar</string>
     <string name="pin_unlock">Desbloquear</string>
     <string name="pin_use_biometrics">Usar biometría</string>
@@ -25,4 +25,15 @@
     <string name="pin_activate">Activar PIN</string>
     <string name="pin_change">Cambiar PIN</string>
     <string name="pin_disable">Desactivar bloqueo</string>
+    <string name="widget_description">Saldo consolidado de DimagPay</string>
+    <string name="widget_loading">Cargando…</string>
+    <string name="widget_locked">Bloqueado</string>
+    <string name="notification_channel_reminders">Recordatorios de cobranza</string>
+    <string name="notification_channel_reminders_desc">Avisos diarios cuando tienes clientes por cobrar</string>
+    <string name="reminder_body">Tienes %1$s por cobrar</string>
+    <string name="reminder_body_locked">Tienes cobros pendientes</string>
+    <string name="settings_debt_reminders_title">Recordatorios de cobranza</string>
+    <string name="settings_debt_reminders_subtitle_on">Aviso diario si hay saldos por cobrar</string>
+    <string name="settings_debt_reminders_subtitle_off">Recibe un aviso diario de lo pendiente</string>
+    <string name="settings_debt_reminders_permission_denied">Activa el permiso de notificaciones para recibir recordatorios</string>
 </resources>

@@ -1,27 +1,27 @@
 package com.paycontrol.app.ui.screens.transactions
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -40,19 +40,18 @@ import com.paycontrol.app.data.local.entity.TransactionEntity
 import com.paycontrol.app.domain.model.DefaultCategories
 import com.paycontrol.app.domain.model.TransactionType
 import com.paycontrol.app.domain.util.Money
+import com.paycontrol.app.ui.components.AccountPickerField
 import com.paycontrol.app.ui.components.MoneyAmountField
 import com.paycontrol.app.ui.components.SectionTitle
 import com.paycontrol.app.ui.components.SoftPanel
 import com.paycontrol.app.ui.components.StatusMessage
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionsScreen(viewModel: TransactionsViewModel) {
     val form by viewModel.form.collectAsStateWithLifecycle()
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
-    val transactions by viewModel.transactions.collectAsStateWithLifecycle()
-    var pendingDeleteId by remember { mutableStateOf<Long?>(null) }
-    val pendingDeleteTx = transactions.firstOrNull { it.id == pendingDeleteId }
+    val pagingItems = viewModel.pagedTransactions.collectAsLazyPagingItems()
+    val pendingDelete = form.pendingDelete
 
     LaunchedEffect(Unit) {
         viewModel.ensureDefaultAccount()
@@ -69,29 +68,23 @@ fun TransactionsScreen(viewModel: TransactionsViewModel) {
         else DefaultCategories.expense
     }
 
-    if (pendingDeleteTx != null) {
+    if (pendingDelete != null) {
         AlertDialog(
-            onDismissRequest = { pendingDeleteId = null },
+            onDismissRequest = viewModel::dismissDeleteConfirm,
             title = { Text("Eliminar movimiento") },
             text = {
                 Text(
-                    "¿Eliminar ${pendingDeleteTx.type} · ${pendingDeleteTx.category} " +
-                        "(${Money.format(pendingDeleteTx.amount)})? Se revertirá el saldo de la cuenta."
+                    "¿Eliminar ${pendingDelete.type} · ${pendingDelete.category} " +
+                        "(${Money.format(pendingDelete.amount)})? Se revertirá el saldo de la cuenta."
                 )
             },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        val id = pendingDeleteTx.id
-                        pendingDeleteId = null
-                        viewModel.deleteTransaction(id)
-                    }
-                ) {
+                TextButton(onClick = viewModel::confirmDeletePending) {
                     Text("Eliminar")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDeleteId = null }) {
+                TextButton(onClick = viewModel::dismissDeleteConfirm) {
                     Text("Cancelar")
                 }
             }
@@ -130,20 +123,22 @@ fun TransactionsScreen(viewModel: TransactionsViewModel) {
         }
 
         items(
-            items = transactions,
-            key = { it.id },
+            count = pagingItems.itemCount,
+            key = pagingItems.itemKey { it.id },
             contentType = { "tx" }
-        ) { tx ->
-            TransactionHistoryItem(
-                tx = tx,
-                isDeleting = form.deletingId == tx.id,
-                onDeleteClick = { pendingDeleteId = tx.id }
-            )
+        ) { index ->
+            val tx = pagingItems[index]
+            if (tx != null) {
+                TransactionHistoryItem(
+                    tx = tx,
+                    isDeleting = form.deletingId == tx.id,
+                    onDeleteClick = { viewModel.requestDelete(tx) }
+                )
+            }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TransactionFormPanel(
     form: TransactionFormState,
@@ -156,11 +151,7 @@ private fun TransactionFormPanel(
     onNoteChange: (String) -> Unit,
     onSave: () -> Unit
 ) {
-    var accountExpanded by remember { mutableStateOf(false) }
-    var categoryExpanded by remember { mutableStateOf(false) }
-    val selectedAccount = remember(accounts, form.accountId) {
-        accounts.firstOrNull { it.id == form.accountId } ?: accounts.firstOrNull()
-    }
+    var categoryPicker by remember { mutableStateOf(false) }
 
     SoftPanel {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -173,40 +164,12 @@ private fun TransactionFormPanel(
             }
         }
 
-        ExposedDropdownMenuBox(
-            expanded = accountExpanded,
-            onExpandedChange = { accountExpanded = it }
-        ) {
-            OutlinedTextField(
-                value = selectedAccount?.let { "${it.name} · ${Money.format(it.balance)}" }
-                    ?: "Sin cuentas",
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Cuenta") },
-                trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = accountExpanded)
-                },
-                modifier = Modifier
-                    .menuAnchor(type = MenuAnchorType.PrimaryNotEditable)
-                    .fillMaxWidth()
-            )
-            ExposedDropdownMenu(
-                expanded = accountExpanded,
-                onDismissRequest = { accountExpanded = false }
-            ) {
-                accounts.forEach { account ->
-                    DropdownMenuItem(
-                        text = {
-                            Text("${account.name} · ${Money.format(account.balance)}")
-                        },
-                        onClick = {
-                            onAccountSelected(account.id)
-                            accountExpanded = false
-                        }
-                    )
-                }
-            }
-        }
+        AccountPickerField(
+            accounts = accounts,
+            selectedAccountId = form.accountId,
+            onAccountSelected = onAccountSelected,
+            label = "Cuenta"
+        )
 
         MoneyAmountField(
             value = form.amountInput,
@@ -214,36 +177,65 @@ private fun TransactionFormPanel(
             label = "Monto"
         )
 
-        ExposedDropdownMenuBox(
-            expanded = categoryExpanded,
-            onExpandedChange = { categoryExpanded = it }
-        ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
             OutlinedTextField(
                 value = form.category,
                 onValueChange = {},
                 readOnly = true,
+                enabled = false,
                 label = { Text("Categoría") },
                 trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded)
+                    Icon(Icons.Outlined.ArrowDropDown, contentDescription = null)
                 },
-                modifier = Modifier
-                    .menuAnchor(type = MenuAnchorType.PrimaryNotEditable)
-                    .fillMaxWidth()
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledContainerColor = MaterialTheme.colorScheme.surface
+                ),
+                modifier = Modifier.fillMaxWidth()
             )
-            ExposedDropdownMenu(
-                expanded = categoryExpanded,
-                onDismissRequest = { categoryExpanded = false }
-            ) {
-                categories.forEach { category ->
-                    DropdownMenuItem(
-                        text = { Text(category) },
-                        onClick = {
-                            onCategoryChange(category)
-                            categoryExpanded = false
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clickable { categoryPicker = true }
+            )
+        }
+
+        if (categoryPicker) {
+            AlertDialog(
+                onDismissRequest = { categoryPicker = false },
+                title = { Text("Categoría") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        categories.forEach { category ->
+                            val selected = category == form.category
+                            Text(
+                                text = category,
+                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (selected) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onCategoryChange(category)
+                                        categoryPicker = false
+                                    }
+                                    .padding(vertical = 12.dp)
+                            )
                         }
-                    )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { categoryPicker = false }) {
+                        Text("Cerrar")
+                    }
                 }
-            }
+            )
         }
 
         OutlinedTextField(

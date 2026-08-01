@@ -8,7 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Contacts
@@ -46,6 +47,7 @@ fun SuppliersScreen(
     contactsRepository: ContactsRepository
 ) {
     val suppliers by viewModel.suppliers.collectAsStateWithLifecycle()
+    val pagingItems = viewModel.pagedSuppliers.collectAsLazyPagingItems()
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedSupplier = suppliers.firstOrNull { it.id == state.selectedSupplierId }
@@ -240,7 +242,6 @@ fun SuppliersScreen(
                         }
                     )
                 }
-                StatusMessage(state.errorMessage, state.successMessage)
             }
         }
 
@@ -256,10 +257,11 @@ fun SuppliersScreen(
         }
 
         items(
-            items = suppliers,
-            key = { it.id },
+            count = pagingItems.itemCount,
+            key = pagingItems.itemKey { it.id },
             contentType = { "supplier" }
-        ) { supplier ->
+        ) { index ->
+            val supplier = pagingItems[index] ?: return@items
             val selected = state.selectedSupplierId == supplier.id
             SoftPanel(
                 modifier = Modifier

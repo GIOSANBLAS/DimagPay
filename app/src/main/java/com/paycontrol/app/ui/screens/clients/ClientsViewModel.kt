@@ -2,13 +2,21 @@ package com.paycontrol.app.ui.screens.clients
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.paycontrol.app.data.contacts.DeviceContact
 import com.paycontrol.app.data.local.entity.AccountEntity
 import com.paycontrol.app.data.local.entity.ClientEntity
 import com.paycontrol.app.data.repository.ClientRepository
 import com.paycontrol.app.data.repository.FinanceRepository
+import com.paycontrol.app.domain.util.AppLog
 import com.paycontrol.app.domain.util.Money
 import com.paycontrol.app.domain.util.UiErrorMapper
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -34,7 +42,8 @@ data class ClientsUiState(
     val successMessage: String? = null
 )
 
-class ClientsViewModel(
+@HiltViewModel
+class ClientsViewModel @Inject constructor(
     private val clientRepository: ClientRepository,
     private val financeRepository: FinanceRepository
 ) : ViewModel() {
@@ -42,6 +51,11 @@ class ClientsViewModel(
     val clients: StateFlow<List<ClientEntity>> = clientRepository
         .observeClients()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val pagedClients: Flow<PagingData<ClientEntity>> = Pager(
+        config = PagingConfig(pageSize = 40, enablePlaceholders = false),
+        pagingSourceFactory = { clientRepository.pagingSource() }
+    ).flow.cachedIn(viewModelScope)
 
     val accounts: StateFlow<List<AccountEntity>> = financeRepository
         .observeAccounts()
@@ -57,6 +71,9 @@ class ClientsViewModel(
     init {
         viewModelScope.launch {
             runCatching { financeRepository.ensureDefaultAccount() }
+                .onFailure { error ->
+                    AppLog.e(TAG, "Error al preparar cuenta por defecto", error)
+                }
         }
     }
 
@@ -113,6 +130,7 @@ class ClientsViewModel(
                     )
                 }
             }.onFailure { error ->
+                AppLog.e(TAG, "Error al crear cliente", error)
                 _uiState.update {
                     it.copy(errorMessage = friendlyError(error, "No se pudo crear el cliente"))
                 }
@@ -137,10 +155,18 @@ class ClientsViewModel(
             _uiState.update { it.copy(errorMessage = "Abono inválido") }
             return
         }
-        if (state.isPaying) return
+
+        var claimed = false
+        _uiState.update { current ->
+            if (current.isPaying) current
+            else {
+                claimed = true
+                current.copy(isPaying = true, errorMessage = null, successMessage = null)
+            }
+        }
+        if (!claimed) return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isPaying = true, errorMessage = null, successMessage = null) }
             runCatching {
                 financeRepository.receiveClientPayment(clientId, accountId, amount)
             }.onSuccess {
@@ -155,6 +181,7 @@ class ClientsViewModel(
                     )
                 }
             }.onFailure { error ->
+                AppLog.e(TAG, "Error al aplicar abono de cliente", error)
                 _uiState.update {
                     it.copy(
                         isPaying = false,
@@ -193,6 +220,7 @@ class ClientsViewModel(
                     )
                 }
             }.onFailure { error ->
+                AppLog.e(TAG, "Error al agregar deuda de cliente", error)
                 _uiState.update {
                     it.copy(
                         isBusy = false,
@@ -225,6 +253,7 @@ class ClientsViewModel(
                     )
                 }
             }.onFailure { error ->
+                AppLog.e(TAG, "Error al actualizar cliente", error)
                 _uiState.update {
                     it.copy(
                         isBusy = false,
@@ -262,6 +291,7 @@ class ClientsViewModel(
                     )
                 }
             }.onFailure { error ->
+                AppLog.e(TAG, "Error al eliminar cliente", error)
                 _uiState.update {
                     it.copy(
                         isBusy = false,
@@ -274,4 +304,8 @@ class ClientsViewModel(
 
     private fun friendlyError(error: Throwable, fallback: String): String =
         UiErrorMapper.map(error, fallback)
+
+    companion object {
+        private const val TAG = "ClientsVM"
+    }
 }

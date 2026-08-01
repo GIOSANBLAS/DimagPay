@@ -1,40 +1,30 @@
-# PayControl
+# DimagPay
 
 Aplicación Android nativa offline-first de control financiero personal/comercial.
+
+**Producto:** Giosánblas · **Arquitectura:** Auto
 
 ## Stack
 
 - Kotlin + Jetpack Compose (Material 3)
-- Clean Architecture / MVVM
-- Room (fuente de verdad local)
-- StateFlow en ViewModels
+- MVVM + Room (SQLCipher) + StateFlow
+- Montos en centavos (`Money`) para precisión exacta
 
-## Estructura de paquetes
+## Módulos
 
-```
-com.paycontrol.app
-├── data
-│   ├── local
-│   │   ├── dao
-│   │   ├── entity
-│   │   └── AppDatabase.kt
-│   └── repository
-├── domain
-│   ├── model
-│   └── util (Money — montos en centavos)
-├── di
-└── ui
-    ├── navigation
-    ├── screens (dashboard, transactions, suppliers, clients)
-    └── theme
-```
-
-## Dinero sin errores de precisión
-
-Los montos se almacenan en Room como `Long` (centavos). El helper `Money` convierte, formatea y opera con `BigDecimal` / aritmética exacta.
+- Dashboard, movimientos, proveedores, clientes (CxC)
+- Cuentas + transferencias entre cuentas
+- Reportes (filtros, gráfica, CSV)
+- PIN / biometría, respaldo JSON, recordatorios, widget
 
 ## Compilar
 
 ```bash
-./gradlew :app:assembleDebug
+.\gradlew.bat :app:installDebug
+.\gradlew.bat :app:bundleRelease   # requiere keystore.properties
 ```
+
+## Identidad
+
+- Nombre visible: **DimagPay**
+- `applicationId`: `com.paycontrol.app` (interno; no cambia instalaciones existentes)

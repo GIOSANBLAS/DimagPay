@@ -10,8 +10,11 @@ import com.paycontrol.app.data.local.entity.AccountEntity
 import com.paycontrol.app.data.local.entity.TransactionEntity
 import com.paycontrol.app.data.repository.FinanceRepository
 import com.paycontrol.app.domain.model.TransactionType
+import com.paycontrol.app.domain.util.AppLog
 import com.paycontrol.app.domain.util.Money
 import com.paycontrol.app.domain.util.UiErrorMapper
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -55,7 +58,8 @@ data class ReportsUiState(
     val successMessage: String? = null
 )
 
-class ReportsViewModel(
+@HiltViewModel
+class ReportsViewModel @Inject constructor(
     private val app: Application,
     private val financeRepository: FinanceRepository
 ) : ViewModel() {
@@ -185,6 +189,7 @@ class ReportsViewModel(
                 }
                 _shareEvents.emit(intent)
             }.onFailure { error ->
+                AppLog.e(TAG, "Error al exportar CSV", error)
                 _uiState.update {
                     it.copy(
                         isExporting = false,
@@ -198,7 +203,7 @@ class ReportsViewModel(
     private fun writeCsvAndBuildShareIntent(transactions: List<TransactionEntity>): Intent {
         val dir = File(app.cacheDir, "exports").apply { mkdirs() }
         val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-        val file = File(dir, "paycontrol_reporte_$stamp.csv")
+        val file = File(dir, "dimagpay_reporte_$stamp.csv")
         val dateFmt = SimpleDateFormat(
             "dd/MM/yyyy HH:mm",
             Locale.Builder().setLanguage("es").setRegion("MX").build()
@@ -228,7 +233,7 @@ class ReportsViewModel(
         return Intent(Intent.ACTION_SEND).apply {
             type = "text/csv"
             putExtra(Intent.EXTRA_STREAM, uri)
-            putExtra(Intent.EXTRA_SUBJECT, "Reporte PayControl")
+            putExtra(Intent.EXTRA_SUBJECT, "Reporte DimagPay")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
     }
@@ -243,6 +248,8 @@ class ReportsViewModel(
     }
 
     companion object {
+        private const val TAG = "ReportsVM"
+
         fun resolveRange(preset: ReportDatePreset): Pair<Long?, Long?> {
             val now = System.currentTimeMillis()
             return when (preset) {

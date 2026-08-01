@@ -15,6 +15,12 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions ORDER BY date DESC, id DESC")
     fun observeAll(): Flow<List<TransactionEntity>>
 
+    @Query("SELECT * FROM transactions ORDER BY date DESC, id DESC")
+    fun pagingSource(): androidx.paging.PagingSource<Int, TransactionEntity>
+
+    @Query("SELECT * FROM transactions ORDER BY date DESC, id DESC")
+    suspend fun getAll(): List<TransactionEntity>
+
     @Query(
         """
         SELECT * FROM transactions
@@ -32,6 +38,15 @@ interface TransactionDao {
 
     @Query("SELECT * FROM transactions WHERE id = :id")
     suspend fun getById(id: Long): TransactionEntity?
+
+    @Query("SELECT * FROM transactions WHERE transferGroupId = :groupId")
+    suspend fun getByTransferGroup(groupId: Long): List<TransactionEntity>
+
+    @Query("UPDATE transactions SET relatedClientId = NULL WHERE relatedClientId = :clientId")
+    suspend fun clearRelatedClient(clientId: Long)
+
+    @Query("UPDATE transactions SET relatedSupplierId = NULL WHERE relatedSupplierId = :supplierId")
+    suspend fun clearRelatedSupplier(supplierId: Long)
 
     @Query(
         """
@@ -60,6 +75,25 @@ interface TransactionDao {
         ORDER BY date DESC, id DESC
         """
     )
+    fun pagingFiltered(
+        fromMs: Long?,
+        toMs: Long?,
+        accountId: Long?,
+        type: String?,
+        category: String?
+    ): androidx.paging.PagingSource<Int, TransactionEntity>
+
+    @Query(
+        """
+        SELECT * FROM transactions
+        WHERE (:fromMs IS NULL OR date >= :fromMs)
+          AND (:toMs IS NULL OR date <= :toMs)
+          AND (:accountId IS NULL OR accountId = :accountId)
+          AND (:type IS NULL OR type = :type)
+          AND (:category IS NULL OR category LIKE '%' || :category || '%')
+        ORDER BY date DESC, id DESC
+        """
+    )
     suspend fun getFiltered(
         fromMs: Long?,
         toMs: Long?,
@@ -71,9 +105,15 @@ interface TransactionDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(transaction: TransactionEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertAll(transactions: List<TransactionEntity>)
+
     @Update
     suspend fun update(transaction: TransactionEntity)
 
     @Delete
     suspend fun delete(transaction: TransactionEntity)
+
+    @Query("DELETE FROM transactions")
+    suspend fun deleteAll()
 }

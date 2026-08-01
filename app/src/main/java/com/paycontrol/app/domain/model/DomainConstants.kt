@@ -19,7 +19,9 @@ object AccountType {
 object TransactionType {
     const val INCOME = "INGRESO"
     const val EXPENSE = "GASTO"
+    const val TRANSFER = "TRANSFERENCIA"
 
+    /** Tipos del formulario de movimiento (sin transferencias entre cuentas). */
     val all = listOf(INCOME, EXPENSE)
 }
 

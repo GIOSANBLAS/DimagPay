@@ -59,7 +59,7 @@ fun FormalInfoScaffold(
 fun AboutScreen(onBack: () -> Unit) {
     FormalInfoScaffold("Acerca de", onBack) {
         SoftPanel {
-            Text("PayControl", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+            Text("DimagPay", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
             Text("Versión ${AppInfo.VERSION_NAME} (${AppInfo.VERSION_CODE})")
             Text(AppInfo.COMPANY, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(

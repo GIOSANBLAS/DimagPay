@@ -2,13 +2,21 @@ package com.paycontrol.app.ui.screens.suppliers
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.paycontrol.app.data.contacts.DeviceContact
 import com.paycontrol.app.data.local.entity.AccountEntity
 import com.paycontrol.app.data.local.entity.SupplierEntity
 import com.paycontrol.app.data.repository.FinanceRepository
 import com.paycontrol.app.data.repository.SupplierRepository
+import com.paycontrol.app.domain.util.AppLog
 import com.paycontrol.app.domain.util.Money
 import com.paycontrol.app.domain.util.UiErrorMapper
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -32,7 +40,8 @@ data class SuppliersUiState(
     val successMessage: String? = null
 )
 
-class SuppliersViewModel(
+@HiltViewModel
+class SuppliersViewModel @Inject constructor(
     private val supplierRepository: SupplierRepository,
     private val financeRepository: FinanceRepository
 ) : ViewModel() {
@@ -40,6 +49,11 @@ class SuppliersViewModel(
     val suppliers: StateFlow<List<SupplierEntity>> = supplierRepository
         .observeSuppliers()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val pagedSuppliers: Flow<PagingData<SupplierEntity>> = Pager(
+        config = PagingConfig(pageSize = 40, enablePlaceholders = false),
+        pagingSourceFactory = { supplierRepository.pagingSource() }
+    ).flow.cachedIn(viewModelScope)
 
     val accounts: StateFlow<List<AccountEntity>> = financeRepository
         .observeAccounts()
@@ -51,6 +65,9 @@ class SuppliersViewModel(
     init {
         viewModelScope.launch {
             runCatching { financeRepository.ensureDefaultAccount() }
+                .onFailure { error ->
+                    AppLog.e(TAG, "Error al preparar cuenta por defecto", error)
+                }
         }
     }
 
@@ -99,6 +116,7 @@ class SuppliersViewModel(
                     )
                 }
             }.onFailure { error ->
+                AppLog.e(TAG, "Error al crear proveedor", error)
                 _uiState.update {
                     it.copy(errorMessage = friendlyError(error, "No se pudo crear el proveedor"))
                 }
@@ -123,10 +141,18 @@ class SuppliersViewModel(
             _uiState.update { it.copy(errorMessage = "Monto de pago inválido") }
             return
         }
-        if (state.isPaying) return
+
+        var claimed = false
+        _uiState.update { current ->
+            if (current.isPaying) current
+            else {
+                claimed = true
+                current.copy(isPaying = true, errorMessage = null, successMessage = null)
+            }
+        }
+        if (!claimed) return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isPaying = true, errorMessage = null, successMessage = null) }
             runCatching {
                 financeRepository.paySupplier(supplierId, accountId, amount)
             }.onSuccess {
@@ -141,6 +167,7 @@ class SuppliersViewModel(
                     )
                 }
             }.onFailure { error ->
+                AppLog.e(TAG, "Error al registrar pago a proveedor", error)
                 _uiState.update {
                     it.copy(
                         isPaying = false,
@@ -173,6 +200,7 @@ class SuppliersViewModel(
                     )
                 }
             }.onFailure { error ->
+                AppLog.e(TAG, "Error al actualizar proveedor", error)
                 _uiState.update {
                     it.copy(
                         isBusy = false,
@@ -209,6 +237,7 @@ class SuppliersViewModel(
                     )
                 }
             }.onFailure { error ->
+                AppLog.e(TAG, "Error al eliminar proveedor", error)
                 _uiState.update {
                     it.copy(
                         isBusy = false,
@@ -221,4 +250,8 @@ class SuppliersViewModel(
 
     private fun friendlyError(error: Throwable, fallback: String): String =
         UiErrorMapper.map(error, fallback)
+
+    companion object {
+        private const val TAG = "SuppliersVM"
+    }
 }

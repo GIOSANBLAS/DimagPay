@@ -22,11 +22,14 @@ class UserPreferencesRepository(context: Context) {
     private val _onboardingDone = MutableStateFlow(prefs.getBoolean(Keys.ONBOARDING_DONE, false))
     private val _guideSeen = MutableStateFlow(prefs.getBoolean(Keys.GUIDE_SEEN, false))
     private val _pinEnabled = MutableStateFlow(prefs.getBoolean(Keys.PIN_ENABLED, false))
+    private val _debtRemindersEnabled =
+        MutableStateFlow(prefs.getBoolean(Keys.DEBT_REMINDERS_ENABLED, false))
 
     val displayName: StateFlow<String> = _displayName.asStateFlow()
     val onboardingDone: StateFlow<Boolean> = _onboardingDone.asStateFlow()
     val guideSeen: StateFlow<Boolean> = _guideSeen.asStateFlow()
     val pinEnabled: StateFlow<Boolean> = _pinEnabled.asStateFlow()
+    val debtRemindersEnabled: StateFlow<Boolean> = _debtRemindersEnabled.asStateFlow()
 
     private object Keys {
         const val DISPLAY_NAME = "display_name"
@@ -35,6 +38,7 @@ class UserPreferencesRepository(context: Context) {
         const val PIN_ENABLED = "pin_enabled"
         const val PIN_HASH = "pin_hash"
         const val PIN_SALT = "pin_salt"
+        const val DEBT_REMINDERS_ENABLED = "debt_reminders_enabled"
     }
 
     suspend fun completeOnboarding(displayName: String) = withContext(Dispatchers.IO) {
@@ -56,6 +60,11 @@ class UserPreferencesRepository(context: Context) {
     suspend fun markGuideSeen() = withContext(Dispatchers.IO) {
         prefs.edit().putBoolean(Keys.GUIDE_SEEN, true).apply()
         _guideSeen.value = true
+    }
+
+    suspend fun setDebtRemindersEnabled(enabled: Boolean) = withContext(Dispatchers.IO) {
+        prefs.edit().putBoolean(Keys.DEBT_REMINDERS_ENABLED, enabled).apply()
+        _debtRemindersEnabled.value = enabled
     }
 
     suspend fun verifyPin(pin: String): Boolean = withContext(Dispatchers.IO) {

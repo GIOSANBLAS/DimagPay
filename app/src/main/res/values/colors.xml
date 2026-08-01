@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#0B3D3A</color>
-    <color name="brand_ink">#0F1C1A</color>
-    <color name="brand_mist">#F4F7F6</color>
-    <color name="brand_teal">#1A6B63</color>
-    <color name="brand_gold">#C4A574</color>
+    <color name="ic_launcher_background">#143744</color>
+    <color name="brand_ink">#121A24</color>
+    <color name="brand_mist">#EEF1F5</color>
+    <color name="brand_pearl">#FBFCFD</color>
+    <color name="brand_sapphire">#1F4E5F</color>
+    <color name="brand_teal">#1F4E5F</color>
+    <color name="brand_brass">#A8874F</color>
+    <color name="brand_gold">#A8874F</color>
+    <color name="widget_bg">#1F4E5F</color>
+    <color name="widget_fg">#FBFCFD</color>
+    <color name="widget_accent">#D0B67E</color>
 </resources>

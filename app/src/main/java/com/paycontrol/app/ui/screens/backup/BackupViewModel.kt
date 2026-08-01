@@ -1,0 +1,200 @@
+package com.paycontrol.app.ui.screens.backup
+
+import android.app.Application
+import android.content.Intent
+import android.net.Uri
+import androidx.core.content.FileProvider
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.paycontrol.app.data.backup.BackupManager
+import com.paycontrol.app.domain.util.AppLog
+import com.paycontrol.app.domain.util.BackupPasswordPolicy
+import com.paycontrol.app.domain.util.UiErrorMapper
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+data class BackupUiState(
+    val isExporting: Boolean = false,
+    val isRestoring: Boolean = false,
+    val showExportPassword: Boolean = false,
+    val showRestoreConfirm: Boolean = false,
+    val pendingRestoreUri: Uri? = null,
+    val inventory: BackupManager.Inventory? = null,
+    val errorMessage: String? = null,
+    val successMessage: String? = null
+)
+
+@HiltViewModel
+class BackupViewModel @Inject constructor(
+    private val app: Application,
+    private val backupManager: BackupManager
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(BackupUiState())
+    val uiState: StateFlow<BackupUiState> = _uiState.asStateFlow()
+
+    private val _shareEvents = MutableSharedFlow<Intent>(extraBufferCapacity = 1)
+    val shareEvents: SharedFlow<Intent> = _shareEvents.asSharedFlow()
+
+    fun requestExport() {
+        if (_uiState.value.isExporting || _uiState.value.isRestoring) return
+        viewModelScope.launch {
+            val inventory = runCatching { backupManager.currentInventory() }
+                .onFailure { AppLog.e(TAG, "Error al leer inventario de respaldo", it) }
+                .getOrNull()
+            _uiState.update {
+                it.copy(
+                    showExportPassword = true,
+                    inventory = inventory,
+                    errorMessage = null,
+                    successMessage = null
+                )
+            }
+        }
+    }
+
+    fun dismissExportPassword() {
+        _uiState.update { it.copy(showExportPassword = false) }
+    }
+
+    fun exportBackup(password: String, confirmPassword: String) {
+        if (_uiState.value.isExporting || _uiState.value.isRestoring) return
+        BackupPasswordPolicy.validate(password)?.let { reason ->
+            _uiState.update { it.copy(errorMessage = reason) }
+            return
+        }
+        if (password != confirmPassword) {
+            _uiState.update { it.copy(errorMessage = "Las contraseñas no coinciden") }
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    showExportPassword = false,
+                    isExporting = true,
+                    errorMessage = null,
+                    successMessage = null
+                )
+            }
+            runCatching {
+                val file = backupManager.export(password)
+                buildShareIntent(file)
+            }.onSuccess { intent ->
+                _uiState.update {
+                    it.copy(
+                        isExporting = false,
+                        successMessage = "Respaldo DimagPay cifrado listo para compartir"
+                    )
+                }
+                _shareEvents.emit(intent)
+            }.onFailure { error ->
+                AppLog.e(TAG, "Error al exportar respaldo", error)
+                _uiState.update {
+                    it.copy(
+                        isExporting = false,
+                        errorMessage = UiErrorMapper.map(
+                            error,
+                            "No se pudo crear el respaldo de DimagPay"
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    fun onRestoreFilePicked(uri: Uri?) {
+        if (uri == null) return
+        viewModelScope.launch {
+            val inventory = runCatching { backupManager.currentInventory() }
+                .onFailure { AppLog.e(TAG, "Error al leer inventario antes de restaurar", it) }
+                .getOrNull()
+            _uiState.update {
+                it.copy(
+                    pendingRestoreUri = uri,
+                    showRestoreConfirm = true,
+                    inventory = inventory,
+                    errorMessage = null,
+                    successMessage = null
+                )
+            }
+        }
+    }
+
+    fun dismissRestoreConfirm() {
+        _uiState.update {
+            it.copy(showRestoreConfirm = false, pendingRestoreUri = null)
+        }
+    }
+
+    fun confirmRestore(password: String) {
+        val uri = _uiState.value.pendingRestoreUri ?: return
+        if (_uiState.value.isRestoring || _uiState.value.isExporting) return
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    showRestoreConfirm = false,
+                    isRestoring = true,
+                    errorMessage = null,
+                    successMessage = null
+                )
+            }
+            runCatching {
+                app.contentResolver.openInputStream(uri)?.use { stream ->
+                    backupManager.import(stream, password)
+                } ?: throw IllegalArgumentException(
+                    "No se pudo abrir el archivo de respaldo de DimagPay"
+                )
+            }.onSuccess {
+                _uiState.update {
+                    it.copy(
+                        isRestoring = false,
+                        pendingRestoreUri = null,
+                        successMessage = "Datos de DimagPay restaurados correctamente"
+                    )
+                }
+            }.onFailure { error ->
+                AppLog.e(TAG, "Error al restaurar respaldo", error)
+                _uiState.update {
+                    it.copy(
+                        isRestoring = false,
+                        pendingRestoreUri = null,
+                        errorMessage = UiErrorMapper.map(
+                            error,
+                            "No se pudo restaurar el respaldo de DimagPay"
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    fun clearMessages() {
+        _uiState.update { it.copy(errorMessage = null, successMessage = null) }
+    }
+
+    private fun buildShareIntent(file: java.io.File): Intent {
+        val uri: Uri = FileProvider.getUriForFile(
+            app,
+            "${app.packageName}.fileprovider",
+            file
+        )
+        return Intent(Intent.ACTION_SEND).apply {
+            type = "application/json"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_SUBJECT, "Respaldo DimagPay")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+    }
+
+    companion object {
+        private const val TAG = "BackupVM"
+    }
+}

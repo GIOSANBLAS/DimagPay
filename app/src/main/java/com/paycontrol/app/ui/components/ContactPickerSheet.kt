@@ -38,6 +38,7 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import com.paycontrol.app.data.contacts.ContactsRepository
+import com.paycontrol.app.domain.util.AppLog
 import com.paycontrol.app.data.contacts.DeviceContact
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -80,7 +81,8 @@ fun ContactPickerSheet(
             delay(250)
             runCatching { contactsRepository.searchContacts(q, limit = 80) }
                 .onSuccess { contacts = it }
-                .onFailure {
+                .onFailure { throwable ->
+                    AppLog.e("ContactPicker", "Error al buscar contactos", throwable)
                     error = "No se pudieron leer los contactos"
                     contacts = emptyList()
                 }
@@ -167,7 +169,7 @@ fun ContactPickerSheet(
                             .heightIn(max = 420.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        if (!loading && contacts.isEmpty()) {
+                        if (!loading && query.isNotBlank() && contacts.isEmpty()) {
                             item {
                                 Text(
                                     "No hay contactos con teléfono coincidentes.",
@@ -180,11 +182,7 @@ fun ContactPickerSheet(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        scope.launch {
-                                            runCatching { sheetState.hide() }
-                                            onContactSelected(contact)
-                                            onDismiss()
-                                        }
+                                        onContactSelected(contact)
                                     }
                                     .padding(vertical = 10.dp)
                             ) {
