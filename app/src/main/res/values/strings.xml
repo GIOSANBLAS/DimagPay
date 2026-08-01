@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PayControl</string>
+    <string name="welcome_title">Bienvenido a PayControl</string>
+    <string name="welcome_subtitle">Tu control financiero, claro y privado.</string>
+    <string name="how_to_call_you">¿Cómo quieres que te llamemos?</string>
+    <string name="display_name_hint">Tu nombre o apodo</string>
+    <string name="continue_label">Continuar</string>
+    <string name="settings">Ajustes</string>
+    <string name="user_manual">Manual de usuario</string>
+    <string name="about">Acerca de</string>
+    <string name="changelog">Historial de cambios</string>
+    <string name="team">Nuestro equipo</string>
+    <string name="licenses">Licencias</string>
+    <string name="privacy">Privacidad</string>
+    <string name="import_contact">Importar contacto</string>
+    <string name="contacts_permission_rationale">PayControl usa tus contactos (locales y de Google sincronizados) solo para crear clientes o proveedores más rápido. No se suben a ningún servidor.</string>
+    <string name="pin_lock_title">Bloqueo por PIN</string>
+    <string name="pin_lock_subtitle">Protege la app con un PIN</string>
+    <string name="pin_locked_title">PayControl bloqueado</string>
+    <string name="pin_enter_hint">Introduce tu PIN para continuar</string>
+    <string name="pin_unlock">Desbloquear</string>
+    <string name="pin_use_biometrics">Usar biometría</string>
+    <string name="pin_incorrect">PIN incorrecto</string>
+    <string name="pin_activate">Activar PIN</string>
+    <string name="pin_change">Cambiar PIN</string>
+    <string name="pin_disable">Desactivar bloqueo</string>
+</resources>

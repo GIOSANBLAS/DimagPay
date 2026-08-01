@@ -1,0 +1,224 @@
+package com.paycontrol.app.ui.screens.suppliers
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.paycontrol.app.data.contacts.DeviceContact
+import com.paycontrol.app.data.local.entity.AccountEntity
+import com.paycontrol.app.data.local.entity.SupplierEntity
+import com.paycontrol.app.data.repository.FinanceRepository
+import com.paycontrol.app.data.repository.SupplierRepository
+import com.paycontrol.app.domain.util.Money
+import com.paycontrol.app.domain.util.UiErrorMapper
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+data class SuppliersUiState(
+    val name: String = "",
+    val phone: String = "",
+    val paymentAmount: String = "",
+    val editName: String = "",
+    val editPhone: String = "",
+    val selectedSupplierId: Long? = null,
+    val selectedAccountId: Long? = null,
+    val isPaying: Boolean = false,
+    val isBusy: Boolean = false,
+    val showContactPicker: Boolean = false,
+    val errorMessage: String? = null,
+    val successMessage: String? = null
+)
+
+class SuppliersViewModel(
+    private val supplierRepository: SupplierRepository,
+    private val financeRepository: FinanceRepository
+) : ViewModel() {
+
+    val suppliers: StateFlow<List<SupplierEntity>> = supplierRepository
+        .observeSuppliers()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val accounts: StateFlow<List<AccountEntity>> = financeRepository
+        .observeAccounts()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private val _uiState = MutableStateFlow(SuppliersUiState())
+    val uiState: StateFlow<SuppliersUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            runCatching { financeRepository.ensureDefaultAccount() }
+        }
+    }
+
+    fun onNameChange(value: String) = _uiState.update { it.copy(name = value, errorMessage = null) }
+    fun onPhoneChange(value: String) = _uiState.update { it.copy(phone = value) }
+    fun onPaymentAmountChange(value: String) = _uiState.update { it.copy(paymentAmount = value) }
+    fun onEditNameChange(value: String) = _uiState.update { it.copy(editName = value, errorMessage = null) }
+    fun onEditPhoneChange(value: String) = _uiState.update { it.copy(editPhone = value) }
+    fun onSupplierSelected(id: Long) {
+        val supplier = suppliers.value.firstOrNull { it.id == id }
+        _uiState.update {
+            it.copy(
+                selectedSupplierId = id,
+                editName = supplier?.name.orEmpty(),
+                editPhone = supplier?.phone.orEmpty(),
+                errorMessage = null,
+                successMessage = null
+            )
+        }
+    }
+    fun onAccountSelected(id: Long) = _uiState.update { it.copy(selectedAccountId = id) }
+    fun openContactPicker() = _uiState.update { it.copy(showContactPicker = true) }
+    fun closeContactPicker() = _uiState.update { it.copy(showContactPicker = false) }
+
+    fun applyContact(contact: DeviceContact) {
+        _uiState.update {
+            it.copy(
+                name = contact.name,
+                phone = contact.phone,
+                showContactPicker = false,
+                errorMessage = null
+            )
+        }
+    }
+
+    fun createSupplier() {
+        val state = _uiState.value
+        viewModelScope.launch {
+            runCatching {
+                supplierRepository.createSupplier(state.name, state.phone)
+            }.onSuccess {
+                _uiState.update {
+                    SuppliersUiState(
+                        selectedAccountId = state.selectedAccountId,
+                        successMessage = "Proveedor creado"
+                    )
+                }
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(errorMessage = friendlyError(error, "No se pudo crear el proveedor"))
+                }
+            }
+        }
+    }
+
+    fun registerPayment() {
+        val state = _uiState.value
+        val supplierId = state.selectedSupplierId
+        val accountId = state.selectedAccountId ?: accounts.value.firstOrNull()?.id
+        val amount = Money.parseToCents(state.paymentAmount)
+        if (supplierId == null) {
+            _uiState.update { it.copy(errorMessage = "Selecciona un proveedor de la lista") }
+            return
+        }
+        if (accountId == null) {
+            _uiState.update { it.copy(errorMessage = "Selecciona la cuenta de donde sale el pago") }
+            return
+        }
+        if (amount == null || amount <= 0L) {
+            _uiState.update { it.copy(errorMessage = "Monto de pago inválido") }
+            return
+        }
+        if (state.isPaying) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isPaying = true, errorMessage = null, successMessage = null) }
+            runCatching {
+                financeRepository.paySupplier(supplierId, accountId, amount)
+            }.onSuccess {
+                val supplierName = suppliers.value.firstOrNull { it.id == supplierId }?.name ?: "proveedor"
+                val accountName = accounts.value.firstOrNull { it.id == accountId }?.name ?: "cuenta"
+                _uiState.update {
+                    it.copy(
+                        paymentAmount = "",
+                        isPaying = false,
+                        successMessage = "Pago de ${Money.format(amount)} a $supplierName · descontado de $accountName",
+                        errorMessage = null
+                    )
+                }
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        isPaying = false,
+                        errorMessage = friendlyError(error, "No se pudo registrar el pago")
+                    )
+                }
+            }
+        }
+    }
+
+    fun saveSupplierEdits() {
+        val state = _uiState.value
+        val supplierId = state.selectedSupplierId
+        if (supplierId == null) {
+            _uiState.update { it.copy(errorMessage = "Selecciona un proveedor de la lista") }
+            return
+        }
+        if (state.isBusy) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isBusy = true, errorMessage = null, successMessage = null) }
+            runCatching {
+                supplierRepository.updateSupplier(supplierId, state.editName, state.editPhone)
+            }.onSuccess {
+                _uiState.update {
+                    it.copy(
+                        isBusy = false,
+                        successMessage = "Proveedor actualizado",
+                        errorMessage = null
+                    )
+                }
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        isBusy = false,
+                        errorMessage = friendlyError(error, "No se pudo actualizar el proveedor")
+                    )
+                }
+            }
+        }
+    }
+
+    fun deleteSelectedSupplier() {
+        val state = _uiState.value
+        val supplierId = state.selectedSupplierId
+        if (supplierId == null) {
+            _uiState.update { it.copy(errorMessage = "Selecciona un proveedor de la lista") }
+            return
+        }
+        if (state.isBusy) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isBusy = true, errorMessage = null, successMessage = null) }
+            runCatching {
+                supplierRepository.deleteById(supplierId)
+            }.onSuccess {
+                _uiState.update {
+                    it.copy(
+                        selectedSupplierId = null,
+                        editName = "",
+                        editPhone = "",
+                        paymentAmount = "",
+                        isBusy = false,
+                        successMessage = "Proveedor eliminado",
+                        errorMessage = null
+                    )
+                }
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        isBusy = false,
+                        errorMessage = friendlyError(error, "No se pudo eliminar el proveedor")
+                    )
+                }
+            }
+        }
+    }
+
+    private fun friendlyError(error: Throwable, fallback: String): String =
+        UiErrorMapper.map(error, fallback)
+}
