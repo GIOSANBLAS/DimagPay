@@ -12,6 +12,12 @@
 -keep class net.sqlcipher.database.** { *; }
 -dontwarn net.sqlcipher.**
 
-# Security crypto
+# Security crypto / Tink
 -keep class androidx.security.crypto.** { *; }
 -dontwarn androidx.security.crypto.**
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn com.google.crypto.tink.**
+
+# Hilt / Dagger
+-dontwarn dagger.hilt.internal.aggregatedroot.codegen.**
+-dontwarn hilt_aggregated_deps.**
