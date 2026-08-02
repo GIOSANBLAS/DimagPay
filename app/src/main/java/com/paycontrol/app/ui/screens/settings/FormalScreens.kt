@@ -70,12 +70,30 @@ fun AboutScreen(onBack: () -> Unit) {
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold
             )
-            Text("Versión ${AppInfo.VERSION_NAME} (${AppInfo.VERSION_CODE})")
+            Text(
+                stringResource(
+                    R.string.about_version,
+                    AppInfo.VERSION_NAME,
+                    AppInfo.VERSION_CODE
+                )
+            )
             Text(AppInfo.COMPANY, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
-                "Aplicación nativa Android offline-first para control financiero personal y comercial.",
+                stringResource(R.string.about_tagline),
                 modifier = Modifier.padding(top = 8.dp),
                 style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                stringResource(R.string.about_copyright, java.time.Year.now().value),
+                modifier = Modifier.padding(top = 16.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                stringResource(R.string.about_disclaimer),
+                modifier = Modifier.padding(top = 8.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

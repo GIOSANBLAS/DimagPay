@@ -15,4 +15,8 @@
 keystore.properties
 *.jks
 *.keystore
+dimagpay-release-credentials.txt
+DimagPay-codigo-fuente.txt
+DimagPay-fuente*.zip
+DimagPay-src*.zip
 

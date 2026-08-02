@@ -19,6 +19,10 @@
     <string name="settings">Ajustes</string>
     <string name="user_manual">Manual de usuario</string>
     <string name="about">Acerca de</string>
+    <string name="about_tagline">Aplicación nativa Android offline-first para control financiero personal y comercial.</string>
+    <string name="about_version">Versión %1$s (%2$d)</string>
+    <string name="about_copyright">© %1$d Giosánblas. Todos los derechos reservados.</string>
+    <string name="about_disclaimer">DimagPay es una herramienta de registro personal y comercial. No constituye asesoría financiera, contable ni fiscal. El uso de la app y la exactitud de los datos ingresados son responsabilidad exclusiva del usuario.</string>
     <string name="changelog">Historial de cambios</string>
     <string name="team">Nuestro equipo</string>
     <string name="licenses">Licencias</string>
